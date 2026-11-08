@@ -183,12 +183,9 @@ drawNPC = function(g,n,sx,sy){
   if(!n.sim) return _drawNPCs(g,n,sx,sy);
   let a; if(n.wind>0) a=n.aimAng-1.3; else if(n.swingT>0) a=n.aimAng-1.3+2.6*(1-n.swingT/.2); else a=FACE_ANG[n.face]+0.9;
   drawHuman(g,sx,sy,{face:n.face,phase:n.phase,moving:n.moving,look:n.look,flash:n.hurtT>0,weapon:n.weapon,wAng:a,gi:n.look.gi});
-  const s=n.sim, label=s.name+(s.guild?` [${s.guild.tag}]`:''); g.font='6px "Pixelify Sans",monospace'; g.textAlign='center';
-  g.fillStyle='#000'; g.fillText(label,sx+1,sy-29); g.fillStyle=Sim.color(s); g.fillText(label,sx,sy-30);
+  const s=n.sim, label=s.name+(s.guild?` [${s.guild.tag}]`:'');
   if(n.hp<n.max){ g.fillStyle='#000'; g.fillRect(sx-6,sy-28,12,2); g.fillStyle='#6ad06a'; g.fillRect(sx-5,sy-28,Math.max(0,Math.round(10*n.hp/n.max)),1); }
-  if(n.say && performance.now()<n.say.until){ const t=n.say.text.length>46?n.say.text.slice(0,44)+'…':n.say.text, w=Math.min(150,g.measureText(t).width+6);
-    g.fillStyle='rgba(20,16,12,.85)'; g.fillRect(sx-w/2,sy-46,w,10); g.fillStyle='#f0e6d0'; g.fillText(t,sx,sy-38); }
-  g.textAlign='left';
+  HILABELS.push({wx:n.x, wy:n.y-30, name:label, col:Sim.color(s), say: n.say && performance.now()<n.say.until ? n.say.text : null});
 };
 // conversar com um jogador
 const _talkS = talkTo;

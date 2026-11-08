@@ -101,6 +101,22 @@ update = function(dt){ _updH(dt); if(!running||!player) return;
 // o que você fala aparece em cima da sua cabeça
 const _dhH = drawHuman;
 drawHuman = function(g,x,y,h){ _dhH(g,x,y,h);
-  if(player && h.look===player.look && player.say && performance.now()<player.say.until && !invOpen){ const t=player.say.text.length>46?player.say.text.slice(0,44)+'…':player.say.text;
-    g.font='6px "Pixelify Sans",monospace'; g.textAlign='center'; const w=Math.min(150,g.measureText(t).width+6); g.fillStyle='rgba(20,16,12,.85)'; g.fillRect(x-w/2,y-42,w,10); g.fillStyle='#ffe8a0'; g.fillText(t,x,y-34); g.textAlign='left'; } };
+  if(player && h.look===player.look && player.say && performance.now()<player.say.until && !invOpen && g===bctx) HILABELS.push({wx:player.x, wy:player.y-30, say:player.say.text, mine:true}); };
 const _enterH = enterGame; enterGame = function(msg){ _enterH(msg); Journal.lines=[]; Journal.add('system','',msg); Journal.add('system','','Enter para falar · /w nome para sussurrar · O: quem está online · L: magias · K: skills.'); };
+
+// textos em alta resolução (nomes, falas, chefes): desenhados depois da ampliação, nítidos
+let HILABELS=[];
+function wrapText(c,t,maxW){ const words=t.split(' '), lines=[]; let l=''; for(const w of words){ const tt=l?l+' '+w:w; if(c.measureText(tt).width>maxW && l){ lines.push(l); l=w; } else l=tt; } if(l) lines.push(l); return lines.slice(0,3); }
+function drawHiResLabels(c,S){
+  const big=innerHeight>=520, fs=Math.round((big?13:11)*dpr), bs=Math.round((big?13:11)*dpr);
+  c.save(); c.textAlign='center'; c.textBaseline='bottom';
+  for(const L of HILABELS){ const [x,y]=S(L.wx,L.wy); let yy=y;
+    if(L.name){ c.font=`600 ${fs}px 'Pixelify Sans', sans-serif`; c.lineWidth=Math.max(2,3*dpr/1.5); c.strokeStyle='rgba(0,0,0,.85)'; c.strokeText(L.name,x,yy); c.fillStyle=L.col||'#fff'; c.fillText(L.name,x,yy); yy-=fs+4*dpr; }
+    if(L.say){ c.font=`${bs}px 'Pixelify Sans', sans-serif`; const lines=wrapText(c,L.say,220*dpr), lh=bs+3*dpr, w=Math.max(...lines.map(t=>c.measureText(t).width))+14*dpr, h=lines.length*lh+8*dpr;
+      c.fillStyle='rgba(18,14,10,.88)'; c.strokeStyle=L.mine?'#e8c070':'#6a5434'; c.lineWidth=Math.max(1,dpr); c.beginPath(); c.roundRect? c.roundRect(x-w/2,yy-h,w,h,5*dpr) : c.rect(x-w/2,yy-h,w,h); c.fill(); c.stroke();
+      c.fillStyle=L.mine?'#ffe8a0':'#f0e6d0'; lines.forEach((t,i)=>c.fillText(t,x,yy-h+8*dpr/2+lh*(i+1))); }
+    if(L.boss){ c.font=`600 ${fs}px 'Pixelify Sans', sans-serif`; c.lineWidth=3; c.strokeStyle='rgba(0,0,0,.85)'; c.strokeText(L.boss,x,yy); c.fillStyle='#e8c070'; c.fillText(L.boss,x,yy); }
+    if(L.bar){ const bw=Math.min(320*dpr,c.canvas.width*.4), bx=c.canvas.width/2-bw/2, by=8*dpr, bh=18*dpr; c.fillStyle='rgba(0,0,0,.7)'; c.fillRect(bx-2,by-2,bw+4,bh+4);
+      c.fillStyle=L.bar.boss?'#8a5a10':'#7a1a10'; c.fillRect(bx,by,bw*Math.max(0,L.bar.f),bh); c.font=`600 ${Math.round(13*dpr)}px 'Pixelify Sans', sans-serif`; c.textBaseline='middle'; c.fillStyle='#fff'; c.fillText(L.bar.name,c.canvas.width/2,by+bh/2+1); c.textBaseline='bottom'; } }
+  c.restore(); HILABELS=[];
+}

@@ -220,8 +220,7 @@ const _stD2 = spellTarget; spellTarget = function(range){ if(!isTouch && mouse.s
 // barra de vida do monstro sob o cursor, no topo (como no D2)
 const _dfxD2 = drawFX;
 drawFX = function(g,cx,cy){ _dfxD2(g,cx,cy); const r=d2.target&&raiders.includes(d2.target)?d2.target:d2.hover; if(!r||!raiders.includes(r)) return; const M=MONS[r.mon]||{name:'?'};
-  const bw=Math.min(140,buf.width*.4), x=Math.round(buf.width/2-bw/2), y=4; g.fillStyle='rgba(0,0,0,.6)'; g.fillRect(x-1,y-1,bw+2,11); g.fillStyle=M.boss?'#8a5a10':'#6a1a10'; g.fillRect(x,y,Math.round(bw*Math.max(0,r.hp/r.max)),9);
-  g.font='7px "Pixelify Sans",monospace'; g.textAlign='center'; g.fillStyle='#fff'; g.fillText(M.name,buf.width/2,y+7); g.textAlign='left';
+  HILABELS.push({wx:0,wy:0,bar:{name:M.name,f:r.hp/r.max,boss:M.boss}});
   const sx=Math.round(r.x-cx), sy=Math.round(r.y-cy), sc=M.scale||1; g.strokeStyle='rgba(255,220,120,.7)'; g.lineWidth=1; g.beginPath(); g.ellipse(sx,sy,7*sc,3*sc,0,0,7); g.stroke(); };
 // marcador de destino no chão
 const _dfxD2b = drawFX;

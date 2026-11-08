@@ -2651,6 +2651,7 @@ function render(now){
   ctx.imageSmoothingEnabled=false;
   ctx.drawImage(buf,0,0,bw*zoom,bh*zoom);
   const S=(wx,wy)=>[ (wx-cx)*zoom, (wy-cy)*zoom ];
+  if(typeof drawHiResLabels==='function') drawHiResLabels(ctx,S);
   const fz=innerHeight<520?10:14; ctx.font=`${Math.round(fz*dpr)}px 'Pixelify Sans', monospace`; ctx.textAlign='center'; ctx.textBaseline='bottom';
   if(target){
     let label, wx, wy;

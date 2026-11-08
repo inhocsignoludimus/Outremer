@@ -220,7 +220,7 @@ drawRaider = function(g,r,x,y){
   g.globalAlpha=1;
   const sc=M.scale||1, top=-30*sc-4;
   if(r.hp<r.max){ g.fillStyle='#000'; g.fillRect(x-8,y+top,16,3); g.fillStyle=M.boss?'#d8a020':'#b8433a'; g.fillRect(x-7,y+top+1,Math.max(0,Math.round(14*r.hp/r.max)),1); }
-  if(M.boss && Math.hypot(player.x-r.x,player.y-r.y)<9*T){ g.font='6px monospace'; g.fillStyle='#e8c070'; g.textAlign='center'; g.fillText(M.name,x,y+top-2); g.textAlign='left'; }
+  if(M.boss && Math.hypot(player.x-r.x,player.y-r.y)<9*T && g===bctx) HILABELS.push({wx:r.x, wy:r.y+top-2, boss:M.name});
 };
 // restos de bichos e mortos-vivos
 const _dObj5 = drawObj;
