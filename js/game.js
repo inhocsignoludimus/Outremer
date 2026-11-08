@@ -1704,7 +1704,7 @@ function costText(cost){ return Object.entries(cost).map(([k,v])=>`${v} ${ITEMS[
 function toggleBuild(force){
   buildMode = force!==undefined ? force : !buildMode; search=null;
   document.body.classList.toggle('building', buildMode);
-  if(buildMode) toast('BUILD MODE — pick a piece below. Left-click / USE to place. B to exit.');
+  if(buildMode) toast('CONSTRUIR — escolha a peça embaixo. Clique / USAR para colocar. B para sair.');
   renderHotbar();
 }
 const BUILD_CATS=['Structure','Defense','Furniture','Camp','Power','Scrap'];
@@ -1719,10 +1719,10 @@ function renderBuildBar(hb){
     d.addEventListener('pointerdown',e=>{ e.stopPropagation(); buildSel=i; renderHotbar(); });
     hb.appendChild(d);
   });
-  const x=document.createElement('div'); x.className='slot exit'; x.textContent='✕'; x.title='Exit build mode (B)';
+  const x=document.createElement('div'); x.className='slot exit'; x.textContent='✕'; x.title='Sair (B)';
   x.addEventListener('pointerdown',e=>{ e.stopPropagation(); toggleBuild(false); }); hb.appendChild(x);
   const p=BUILD[buildSel], bi=document.getElementById('build-info');
-  bi.innerHTML=`<div class="tabs">${BUILD_CATS.filter(c=>BUILD.some(q=>q.cat===c)).map(c=>`<button class="tab${c===buildCat?' on':''}" data-c="${c}">${c}</button>`).join('')}</div><div class="bdesc"><b>${p.name}</b>: ${p.id==='scrap'?p.desc:costText(buildCost(p))}${p.desc&&p.id!=='scrap'?' · '+p.desc:''} <small>(Q switches category)</small></div>`;
+  bi.innerHTML=`<div class="tabs">${BUILD_CATS.filter(c=>BUILD.some(q=>q.cat===c)).map(c=>`<button class="tab${c===buildCat?' on':''}" data-c="${c}">${c}</button>`).join('')}</div><div class="bdesc"><b>${p.name}</b>: ${p.id==='scrap'?p.desc:costText(buildCost(p))}${p.desc&&p.id!=='scrap'?' · '+p.desc:''} <small>(Q troca a categoria)</small></div>`;
   bi.querySelectorAll('.tab').forEach(t=>t.addEventListener('pointerdown',e=>{ e.stopPropagation(); buildCat=t.dataset.c; renderHotbar(); }));
 }
 function ghostTile(){
@@ -1742,22 +1742,22 @@ function updateGhost(){
       if(b && b.t!=='_fence') tgt={kind:'built',ref:b,name:BUILD.find(q=>q.id===b.t).name,yield:SCRAP_YIELD[b.t]};
       else if(o && SCRAP_YIELD[o.type] && o.type!=='body' && o.type!=='carcass') tgt={kind:'obj',ref:o,name:OBJ_NAMES[o.type]||o.type,yield:SCRAP_YIELD[o.type]};
       else if(map[i]===TL.FENCE && bld[i]<0) tgt={kind:'fence',x:tx,y:ty,name:'Fence',yield:SCRAP_YIELD.fence}; }
-    let why = !tgt ? 'Nothing to scrap here' : far ? 'Too far' : (tgt.kind==='obj' && tgt.ref.container && !tgt.ref.searched) ? 'Search it first' : '';
+    let why = !tgt ? 'Nada para desmontar aqui' : far ? 'Longe demais' : (tgt.kind==='obj' && tgt.ref.container && !tgt.ref.searched) ? 'Revista primeiro' : '';
     ghost={p,tx,ty,ok:!why,why,tgt,w:tgt&&tgt.ref&&tgt.ref.w||1,h:tgt&&tgt.ref&&tgt.ref.h||1, gx: tgt&&tgt.ref&&tgt.ref.x!==undefined&&tgt.kind==='obj'?tgt.ref.x:tx, gy: tgt&&tgt.kind==='obj'?tgt.ref.y:ty};
     return;
   }
   const w=p.w||1, h=p.h||1; let why='';
   for(let dy=0;dy<h && !why;dy++) for(let dx=0;dx<w && !why;dx++){ const x=tx+dx, y=ty+dy;
-    if(!inB(x,y)){ why='Out of bounds'; break; } const i=idx(x,y), t=map[i];
+    if(!inB(x,y)){ why='Fora do mapa'; break; } const i=idx(x,y), t=map[i];
     if(p.id==='pier'){ const wat=t===TL.WATER||t===TL.SEA; const nb=[[1,0],[-1,0],[0,1],[0,-1]].some(([a,b])=>{ const tt=tileAt(x+a,y+b); return tt!==TL.WATER&&tt!==TL.SEA; });
-      if(!wat) why='Piers go over water'; else if(!nb) why='Start from the shore or another pier'; else if(vehicles.some(v=>Math.hypot(v.x-x*T-8,v.y-y*T-8)<30)) why='A boat is in the way'; continue; }
-    if(t===TL.WALL||t===TL.WINDOW||t===TL.WATER||t===TL.FENCE||t===TL.SEA) why='Blocked';
-    else if(objGrid[i]||doors.has(i)) why='Something is in the way';
-    else if(playerOnTile(x,y) || raiders.some(r=>Math.floor(r.x/T)===x&&Math.floor((r.y-3)/T)===y)) why='Someone is standing there';
-    else if(p.id==='floor' && (bld[i]>=0 || t===TL.WOOD)) why='Already has a floor';
+      if(!wat) why='O cais vai sobre a água'; else if(!nb) why='Comece da margem ou de outro cais'; else if(vehicles.some(v=>Math.hypot(v.x-x*T-8,v.y-y*T-8)<30)) why='Um barco atrapalha'; continue; }
+    if(t===TL.WALL||t===TL.WINDOW||t===TL.WATER||t===TL.FENCE||t===TL.SEA) why='Bloqueado';
+    else if(objGrid[i]||doors.has(i)) why='Algo está no caminho';
+    else if(playerOnTile(x,y) || raiders.some(r=>Math.floor(r.x/T)===x&&Math.floor((r.y-3)/T)===y)) why='Tem alguém aí';
+    else if(p.id==='floor' && (bld[i]>=0 || t===TL.WOOD)) why='Já tem piso';
   }
-  if(!why && far) why='Too far';
-  if(!why && !canAfford(buildCost(p))) why='Not enough materials';
+  if(!why && far) why='Longe demais';
+  if(!why && !canAfford(buildCost(p))) why='Falta material';
   ghost={p,tx,ty,gx:tx,gy:ty,w,h,ok:!why,why};
 }
 function placeBuild(){
