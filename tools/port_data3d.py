@@ -1,10 +1,11 @@
 # Porta TODOS os dados do Outremer 3D (repo offline-mmo/data) para js/data3d.js
-# uso: python3 tools/port_data3d.py /caminho/para/mmo/data > js/data3d.js
+# uso: python3 tools/port_data3d.py /caminho/para/mmo/data [pt|en] > js/data3d.js  (en > js_en/data3d.js)
 import json, sys, os, glob
 root = sys.argv[1]
+LANG = sys.argv[2] if len(sys.argv) > 2 else 'pt'
 def strip(o):
     if isinstance(o, dict):
-        if set(o.keys()) >= {'pt','en'} and len(o) <= 3: return o['pt']
+        if set(o.keys()) >= {'pt','en'} and len(o) <= 3: return o[LANG]
         return {k: strip(v) for k, v in o.items()}
     if isinstance(o, list): return [strip(x) for x in o]
     return o

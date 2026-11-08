@@ -485,33 +485,8 @@ body.apk #btn-fs, body.apk #t-fs{display:none!important}</style>
   <div id="export-box" style="display:none"><textarea id="export-text" readonly></textarea><button class="mbtn" id="export-copy">Copiar texto do save</button></div>
 </div></div>
 
-<script src="js/world.js"></script>
-<script src="js/vehicles.js"></script>
-<script src="js/decor.js"></script>
-<script src="js/survival.js"></script>
-<script src="js/npc.js"></script>
-<script src="js/game.js"></script>
-<script src="js/outremer.js"></script>
-<script src="js/arms.js"></script>
-<script src="js/data3d.js"></script>
-<script src="js/items.js"></script>
-<script src="js/intro.js"></script>
-<script src="js/chars.js"></script>
-<script src="js/gear_draw.js"></script>
-<script src="js/paperdoll.js"></script>
-<script src="js/monsters.js"></script>
-<script src="js/magic.js"></script>
-<script src="js/sim.js"></script>
-<script src="js/hud.js"></script>
-<script src="js/world2.js"></script>
-<script src="js/fishing.js"></script>
-<script src="js/craft.js"></script>
-<script src="js/housing.js"></script>
-<script src="js/mounts.js"></script>
-<script src="js/events.js"></script>
-<script src="js/loyalty.js"></script>
-<script src="js/sound.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/uo_ui.js"></script>
+<script>(function(){var L;try{L=localStorage.getItem('outremer_lang')}catch(e){}if(L!=='pt')L='en';window.LANG=L;
+var d=L==='en'?'js_en/':'js/',F=["world.js", "vehicles.js", "decor.js", "survival.js", "npc.js", "game.js", "outremer.js", "arms.js", "data3d.js", "items.js", "intro.js", "chars.js", "gear_draw.js", "paperdoll.js", "monsters.js", "magic.js", "sim.js", "hud.js", "world2.js", "fishing.js", "craft.js", "housing.js", "mounts.js", "events.js", "loyalty.js", "sound.js", "ui.js", "uo_ui.js", "lang.js"];if(L==='en')F.unshift('_html.js');
+for(var i=0;i<F.length;i++){var f=F[i];document.write('<script src="'+(f==='lang.js'?'js/':d)+f+'"><\/script>');}})();</script>
 </body>
 </html>
