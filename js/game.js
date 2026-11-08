@@ -2596,6 +2596,7 @@ function render(now){
   }
   for(const p of particles){ g.fillStyle=p.col; g.fillRect(Math.round(p.x-cx),Math.round(p.y-p.z-cy),1,1); }
   for(const t of tracers){ g.strokeStyle=`rgba(255,230,150,${t.t/.07})`; g.lineWidth=1; g.beginPath(); g.moveTo(t.x1-cx,t.y1-cy); g.lineTo(t.x2-cx,t.y2-cy); g.stroke(); }
+  if(typeof drawFX==="function") drawFX(g,cx,cy);
   if(player.flashT>0){ const a=player.aimAng; g.fillStyle='#ffe9a0'; g.fillRect(Math.round(player.x-cx+Math.cos(a)*9)-1,Math.round(player.y-10-cy+Math.sin(a)*6)-1,3,3); }
   if(ghost){
     const gx=ghost.gx*T-cx, gy=ghost.gy*T-cy, p=ghost.p;
