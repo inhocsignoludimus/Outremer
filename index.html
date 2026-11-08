@@ -396,10 +396,11 @@ body.apk #btn-fs, body.apk #t-fs{display:none!important}</style>
   <div id="stats" class="panel">
     <div id="who">Alex<small>—</small></div>
     <div class="stats-row"><div class="stats-bars">
-    <div class="stat">HEALTH<div class="bar"><div id="bar-health"></div></div></div>
-    <div class="stat">THIRST<div class="bar"><div id="bar-thirst"></div></div></div>
-    <div class="stat">HUNGER<div class="bar"><div id="bar-hunger"></div></div></div>
-    <div class="stat">STAMINA<div class="bar"><div id="bar-stamina"></div></div></div>
+    <div class="stat">VIDA<div class="bar"><div id="bar-health"></div></div></div>
+    <div class="stat">MANA<div class="bar"><div id="bar-mana" style="background:#3a6ad0;height:100%"></div></div></div>
+    <div class="stat" style="display:none">THIRST<div class="bar"><div id="bar-thirst"></div></div></div>
+    <div class="stat" style="display:none">HUNGER<div class="bar"><div id="bar-hunger"></div></div></div>
+    <div class="stat">FÔLEGO<div class="bar"><div id="bar-stamina"></div></div></div>
     </div><canvas id="mini-body" width="64" height="92" title="Body — open the bag (I) for details"></canvas></div>
     <div id="conds"></div>
     <div id="weap">—</div>
@@ -408,7 +409,7 @@ body.apk #btn-fs, body.apk #t-fs{display:none!important}</style>
     <span id="clock-day">Day 1</span> · <span id="clock-time">17:00</span>
     <small id="clock-period">Evening</small>
     <small id="clock-place">—</small>
-    <div class="hudbtns"><button id="btn-map">MAP</button><button id="btn-bag">BAG</button><button id="btn-build">BUILD</button><button id="btn-craft">CRAFT</button><button id="btn-menu">MENU</button><button id="btn-skip">+3h</button><button id="btn-fs" title="Fullscreen">⛶</button></div>
+    <div class="hudbtns"><button id="btn-map">MAPA</button><button id="btn-bag">MOCHILA</button><button id="btn-build">CONSTRUIR</button><button id="btn-craft">FABRICAR</button><button id="btn-menu">MENU</button><button id="btn-skip">+3h</button><button id="btn-fs" title="Fullscreen">⛶</button></div>
   </div>
   <div id="toasts"></div>
   <div id="build-info"></div>
@@ -491,7 +492,11 @@ body.apk #btn-fs, body.apk #t-fs{display:none!important}</style>
 <script src="js/game.js"></script>
 <script src="js/outremer.js"></script>
 <script src="js/arms.js"></script>
+<script src="js/data3d.js"></script>
+<script src="js/items.js"></script>
 <script src="js/intro.js"></script>
 <script src="js/chars.js"></script>
+<script src="js/gear_draw.js"></script>
+<script src="js/paperdoll.js"></script>
 </body>
 </html>

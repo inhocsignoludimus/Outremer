@@ -1312,7 +1312,7 @@ function useSlot(i){
   if(ITEMS[s.id].wear){ wearSlot(i); return; }
   if(ITEMS[s.id].weapon){
     player.weapon = player.weapon===s.id ? 'fists' : s.id;
-    toast(player.weapon==='fists' ? 'Weapon put away. Fists only.' : `Equipped: ${ITEMS[s.id].name}`);
+    toast(player.weapon==='fists' ? 'Arma guardada. Só os punhos.' : `Empunhando: ${ITEMS[s.id].name}`);
     renderHotbar(); return;
   }
   const r=ITEMS[s.id].use();
@@ -2108,7 +2108,7 @@ function sharedTick(dt){
   particles=particles.filter(p=>p.life>0);
   for(const t of tracers) t.t-=dt; tracers=tracers.filter(t=>t.t>0);
   shake=Math.max(0,shake-dt*14);
-  time+=dt*0.05*(OPTS.dayLen==='long'?0.5:1); if(time>=24){ time-=24; day++; toast(`Day ${day}.`); }
+  time+=dt*0.05*(OPTS.dayLen==='long'?0.5:1); if(time>=24){ time-=24; day++; toast(`Dia ${day}.`); }
 }
 function updateDriving(dt){
   let ix=0, iy=0;
@@ -2750,9 +2750,9 @@ function updateHud(dt){
   if(driving){ const K=VEH_KINDS[driving.kind]; cs.unshift(`<span style="color:#d6b47a">${K.name} · ${Math.round(Math.abs(driving.sp)/T*3.6)} km/h · fuel ${Math.round(driving.fuel)}% · ${Math.round(driving.hp)}%</span>`); }
   document.getElementById('conds').innerHTML=[...new Set(cs)].join(' · ');
   const hh=Math.floor(time), mm=Math.floor((time-hh)*60/10)*10;
-  document.getElementById('clock-day').textContent=`Day ${day}`;
+  document.getElementById('clock-day').textContent=`Dia ${day}`;
   document.getElementById('clock-time').textContent=`${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`;
-  let per='Night'; if(time>=5&&time<11) per='Morning'; else if(time>=11&&time<17) per='Afternoon'; else if(time>=17&&time<21) per='Evening';
+  let per='Noite'; if(time>=5&&time<11) per='Manhã'; else if(time>=11&&time<17) per='Tarde'; else if(time>=17&&time<21) per='Entardecer';
   document.getElementById('clock-period').textContent=per;
   const reg=regionAt(player.x,player.y), b = player.inB>=0 ? buildings[player.inB] : null;
   document.getElementById('clock-place').textContent = (reg ? reg.name : 'Wilderness') + (b ? ' · '+buildingName(b) : '');

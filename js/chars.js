@@ -51,7 +51,7 @@ const RACES = {
               skins:['#f6e4d0','#ecd4bc','#d8c0a4','#c8b49a','#b8a8c8','#9a8aa8'], hairs:['#f0ece0','#d8d8e0','#e8d090','#d8b860','#a85a2a','#2e2e3a','#4a3a5a','#5a6a4a'] },
   anao:     { name:'Anão',      sx:1.2, sy:.8,   desc:'Baixo e largo. +15% de vida, +5 em Ferraria e Mineração.',
               skins:['#f0c8a8','#d8a888','#c08a68','#9a6a4a','#7a5038'], hairs:['#17110e','#4a2e1a','#8a3a1e','#c86a2a','#a8803a','#8a8680','#d8d8d0'] },
-  pequenino:{ name:'Pequenino', sx:.92, sy:.76,  desc:'Pequeno e ligeiro. +10% de velocidade, +5 em Furtividade e Ocultação.',
+  pequenino:{ name:'Halfling', sx:.92, sy:.76,  desc:'Pequeno e ligeiro. +10% de velocidade, +5 em Furtividade e Ocultação.',
               skins:['#f2cfb0','#e8bc98','#d0a07a','#b08058','#8a6040'], hairs:['#2e1e14','#4a2e1a','#6a4424','#a8803a','#d8b860','#8a3a1e'] },
 };
 const RACE_BONUS = { elfo:{magia:5,arcos:5}, anao:{ferraria:5,mineracao:5}, pequenino:{furtividade:5,ocultacao:5} };
