@@ -50,6 +50,8 @@ let uoRect={x:0,y:0,w:innerWidth,h:innerHeight}, warMode=true;
   body.uo.playing #uo-war{display:block}
   body.uo2 #uo-panel{display:block;position:fixed;inset:0;pointer-events:none;z-index:52}
   body.uo2 #stats, body.uo2 #clock{display:none!important}
+  body.uo #toasts, body.uo2 #toasts{display:none!important}
+  @media (max-width:700px){ #toasts{top:4px!important} }
   body.uo2 #uo-mini{width:150px!important;height:150px!important;border-radius:50%!important;border:5px solid #b8a070!important;box-shadow:0 0 0 2px #3a2a14,0 0 0 6px #6a5434,0 4px 10px #000!important;right:14px!important;top:14px!important}
   body.uo2 #uo-mini .loc{top:auto;bottom:-22px;left:0;right:0;text-align:center;font-size:12px}
   body.uo2 #uo-mini:after{content:attr(data-xy);position:absolute;left:0;right:0;bottom:6px;text-align:center;color:#fff;font-size:11px;text-shadow:1px 1px 0 #000}
