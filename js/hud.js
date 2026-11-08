@@ -96,9 +96,6 @@ function renderOnline(){
 // retrato: o rosto do seu personagem no canto
 const _updH = update;
 update = function(dt){ _updH(dt); if(!running||!player) return;
-  const c=document.getElementById('mini-body'); if(!c) return; if(c.width!==26){ c.width=26; c.height=30; }
-  const g=c.getContext('2d'); g.imageSmoothingEnabled=false; g.clearRect(0,0,26,30);
-  g.save(); g.translate(13,52); g.scale(2,2); drawHuman(g,0,0,{face:'down',phase:0,moving:false,look:player.look,weapon:'fists',wAng:0,head:player.equip.head,body:player.equip.body}); g.restore();
   const w=document.getElementById('weap'); if(w){ const Wp=WEAPONS[player.weapon]; w.textContent=`${Wp?Wp.name:'Punhos'} · Armadura ${Math.round(totalArmor()*100)}%${player.guild?' · ['+player.guild+']':''}`; }
 };
 // o que você fala aparece em cima da sua cabeça

@@ -2074,6 +2074,7 @@ function update(dt){
   if(aiming && !buildMode){ const m=mouseWorld(); player.aimAng=Math.atan2(m.y-(player.y-10), m.x-player.x); player.face=faceFromAng(player.aimAng);
     if(leftHeld && player.atkCd<=0) playerAttack(player.aimAng); }
   if(attackHeld && player.atkCd<=0 && !buildMode) playerAttack(autoAimAngle());
+  else if(leftHeld && !aiming && player.atkCd<=0 && !buildMode && !paused()) playerAttack(clickAngle());
   if(player.moving){
     if(search) search=null;
     if(!aiming && !player.swing){ if(Math.abs(ix)>Math.abs(iy)) player.face = ix>0?'right':'left'; else player.face = iy>0?'down':'up'; }
@@ -2814,12 +2815,16 @@ canvas.addEventListener('mousedown',e=>{
   if(e.button===2) aiming=true;
   else if(e.button===0){
     leftHeld=true;
-    if(aiming){ const m=mouseWorld(); playerAttack(Math.atan2(m.y-(player.y-10), m.x-player.x)); }
-    else if(!aimHintShown){ aimHintShown=true; toast('Hold RIGHT mouse to aim, then LEFT click to attack.'); }
+    playerAttack(clickAngle());
   }
 });
 addEventListener('mouseup',e=>{ if(e.button===2) aiming=false; if(e.button===0) leftHeld=false; });
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
+// estilo D2/TCoM: clique ataca na direção do cursor; se houver monstro perto do cursor, mira nele
+function clickAngle(){ const m=mouseWorld(); let best=null, bd=18; for(const r of raiders){ const d=Math.hypot(r.x-m.x,(r.y-9)-m.y); if(d<bd){ bd=d; best=r; } }
+  const tx=best?best.x:m.x, ty=best?best.y-9:m.y; return Math.atan2(ty-(player.y-10), tx-player.x); }
+addEventListener('keydown',e=>{ if(e.code==='Space' && running && document.activeElement.tagName!=='INPUT'){ e.preventDefault(); if(!attackHeld){ attackHeld=true; playerAttack(autoAimAngle()); } } });
+addEventListener('keyup',e=>{ if(e.code==='Space') attackHeld=false; });
 
 const joy={active:false,id:null,ox:0,oy:0,x:0,y:0};
 const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;

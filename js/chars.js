@@ -225,7 +225,7 @@ startGame = function(){
   addItem('bread',4); addItem('bandage',3); addItem('cash',30);
   const given=new Set(); for(const k of cSkills) for(const [id,n] of KIT[k]||[]) if(ITEMS[id] && !given.has(id)){ addItem(id,n); given.add(id); }
   curSlot = firstEmptySlot(); if(curSlot<0) curSlot=0;
-  enterGame(`Bem-vindo a Aurélia, ${name}. Armas melhores, armaduras e ouro estão lá fora, além dos muros. E: falar/usar · I: mochila · M: mapa · K: skills.`);
+  enterGame(`Bem-vindo a ${SW.spawn}, ${name}. Armas melhores, armaduras e ouro estão lá fora, além dos muros. E: falar/usar · I: mochila · M: mapa · K: skills.`);
   saveGame(true);
 };
 function applyRace(){ const r=player.look.race;
