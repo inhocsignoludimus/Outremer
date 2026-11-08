@@ -150,7 +150,7 @@ updateRaider = function(r,dt){
   const sp0=r.speed; if(r.slowT>0){ r.slowT-=dt; r.speed*=.5; }
   if(r.dashT>0){ r.dashT-=dt; r.speed=sp0*3; }
   _updR(r,dt); r.speed=sp0;
-  if(!raiders.includes(r) || !M || !M.special || player.ghost) return;
+  if(!raiders.includes(r) || !M || !M.special || !M.special.length || player.ghost) return;
   r.spT-=dt; const d=Math.hypot(player.x-r.x,player.y-r.y);
   if(r.spT<=0 && r.state==='chase' && d<8*T){ const s=rpick(M.special); r.spT=5+Math.random()*4;
     const ang=Math.atan2(player.y-r.y,player.x-r.x);

@@ -51,17 +51,18 @@ const strip = s => s.normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase();
 function settlement(s){
   if(s.id==='aurelia') return;
   const [cx0, cy0] = cc(s.cell), bio = BIO[s.biome]||'p', roofs = BIOROOF[bio]||ROOF;
+  const levant = s.biome==='outremer' || ['acre_livre','aelia_sancta','faro_bizantino'].includes(s.id), jeru = s.id==='aelia_sancta';
   const cap = !!s.capital, castle = /castelo|fort|posto/.test(s.id), abbey = /mosteiro|templo/.test(s.id), camp = /acampamento|faro|porto_lodo/.test(s.id);
-  const S = cap ? 64 : castle ? 40 : abbey ? 36 : camp ? 24 : 34;
+  const S = jeru ? 84 : cap ? 64 : castle ? 40 : abbey ? 36 : camp ? 24 : 34;
   let x0 = Math.round(cx0 - S/2), y0 = Math.round(cy0 - S/2);
   // se encostar em outro povoado, empurra para longe
   for(let k=0; k<30 && overlapsRegion(x0,y0,S,S); k++){ const r=world.regions.find(r=>x0<r.x+r.w+6&&x0+S+6>r.x&&y0<r.y+r.h+6&&y0+S+6>r.y); const a=Math.atan2(cy0-(r.y+r.h/2),cx0-(r.x+r.w/2)); x0+=Math.round(Math.cos(a)*6); y0+=Math.round(Math.sin(a)*6); }
   x0=Math.max(4,Math.min(W-S-4,x0)); y0=Math.max(4,Math.min(H-S-4,y0));
   const CX = x0 + Math.floor(S/2), CY = y0 + Math.floor(S/2);
-  world.regions.push({ name:s.name, kind: cap?'city':'town', x:x0, y:y0, w:S, h:S, sid:s.id, biome:bio, safe:true });
+  world.regions.push({ name:s.name, kind: cap?'city':'town', x:x0, y:y0, w:S, h:S, sid:s.id, biome:bio, safe:true, style: levant?'levant':bio==='n'?'north':null });
   gates[s.id] = [];
   // muralha (capitais e castelos); paliçada nas vilas
-  if(cap || castle){ const mat = bio==='o'?12:9;
+  if(cap || castle){ const mat = levant?13:9;
     for(let x=x0; x<x0+S; x++){ if(Math.abs(x-CX)>2){ wall(x,y0,1,2,mat); wall(x,y0+S-2,1,2,mat); } }
     for(let y=y0; y<y0+S; y++){ if(Math.abs(y-CY)>2){ wall(x0,y,2,1,mat); wall(x0+S-2,y,2,1,mat); } }
     for(const [a,b] of [[x0-1,y0-1],[x0+S-3,y0-1],[x0-1,y0+S-3],[x0+S-3,y0+S-3],[CX-6,y0+S-3],[CX+3,y0+S-3],[CX-6,y0-1],[CX+3,y0-1]]) wall(a,b,4,4,10);
@@ -77,16 +78,19 @@ function settlement(s){
   const tryB = (t,w,h,o) => { for(let k=0;k<400;k++){ const x=R(x0+4,x0+S-4-w), y=R(y0+4,y0+S-4-h); if(taken(x,y,w,h)) continue;
       const below = world.roads.some(r=>r.k==='street'&&y+h+1>=r.y&&y+h+1<r.y+r.h&&x+w/2>=r.x&&x+w/2<r.x+r.w), above = world.roads.some(r=>r.k==='street'&&y-2>=r.y&&y-2<r.y+r.h&&x+w/2>=r.x&&x+w/2<r.x+r.w);
       if(!below && !above && k<300) continue;
-      const dx=x+Math.floor(w/2), dy=below?y+h-1:y; const b=B(t,x,y,w,h,[[dx,dy]],{ mat:o.mat||pick(bio==='o'?[12,12,9]:[11,11,12,9]), roof:o.roof||pick(roofs), ...o });
+      const dx=x+Math.floor(w/2), dy=below?y+h-1:y; const b=B(t,x,y,w,h,[[dx,dy]],{ mat:o.mat||(levant?13:pick([11,11,12,9])), roof:o.roof||pick(levant?['#d8c8a0','#c8b088','#e0d0b0','#d0bc94']:roofs), ...(levant?{flat:true,levant:true}:{}), ...o });
       world.walks.push({x:dx,y:below?y+h:y-1,w:1,h:1}); return b; } return null; };
+  if(jeru){ tryB('church', 17, 21, { mat:13, roof:'#e0d4b8', name:'SANTO SEPULCRO', dome:'#e8e0d0' }); tryB('mage', 13, 13, { mat:13, roof:'#d8c8a0', name:'CUPULA DOURADA', dome:'#e0b040' });
+    for(let k=0;k<12;k++){ const x=CX-30+k*5; if(!taken(x,CY+4,2,1,1)) prop('awning',x,CY+4,{c:k%4}); if(!taken(x,CY-6,2,1,1)) prop('awning',x,CY-6,{c:(k+2)%4}); } }
+  if(levant && !jeru) for(let k=0;k<6;k++){ const x=CX-14+k*5; if(!taken(x,CY+4,2,1,1)) prop('awning',x,CY+4,{c:k%4}); }
   if(castle){ B('castle', CX-10, y0+5, 21, 12, [[CX, y0+16],[CX-1,y0+16]], { mat:9, roof:'#3c3a3a', name:strip(s.name), flat:true }); }
-  if(abbey || cap || s.services?.includes('healer')) tryB('church', 11, 15, { mat:9, roof:'#3a3532', name: abbey ? strip(s.name) : 'CAPELA' });
+  if(!jeru && (abbey || cap || s.services?.includes('healer'))) tryB('church', 11, 15, { mat:levant?13:9, roof:levant?'#e0d4b8':'#3a3532', name: abbey ? strip(s.name) : 'CAPELA', ...(levant?{dome:'#e8e0d0'}:{}) });
   for(const v of s.vendors||[]){ const d=VEND[v]; if(!d) continue; const [t,name,kind]=d; const big=t==='tavern'||t==='forge'; const b=tryB(t, big?12:10, big?9:8, { name, kind });
     if(b && t==='forge'){ prop('anvil', b.x-2, b.y+2); prop('logs', b.x-2, b.y+4); } }
   if(s.services?.includes('healer') && !(s.vendors||[]).includes('alquimista')) tryB('shop',10,8,{ name:'CURANDEIRO', kind:'healer' });
   const nh = cap ? 18 : castle ? 5 : abbey ? 5 : camp ? 4 : 9;
   for(let k=0;k<nh;k++){ const w=R(7,10), h=R(6,8); tryB(w>=9&&h>=7?'house_m':'house_s', w, h, {}); }
-  for(let k=0;k<(cap?30:10);k++){ const x=R(x0+4,x0+S-5), y=R(y0+4,y0+S-5); if(!taken(x,y,1,1)) prop(pick(bio==='o'?['palm','keg','crate','hay']:bio==='n'?['pine','crate','logs']:['tree','tree','crate','keg','hay']), x, y); }
+  for(let k=0;k<(cap?30:10);k++){ const x=R(x0+4,x0+S-5), y=R(y0+4,y0+S-5); if(!taken(x,y,1,1)) prop(pick(levant?['palm','palm','keg','crate','olive']:bio==='n'?['pine','crate','logs']:['tree','tree','crate','keg','hay']), x, y); }
   // portos: cais
   if(/porto|san_marco|acre|faro/.test(s.id)) world.lots.push({ k:'pier', x:CX-2, y:y0+S, w:5, h:10 });
   // fazendas em volta das cidades das planícies

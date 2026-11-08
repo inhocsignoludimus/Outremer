@@ -75,3 +75,11 @@ findSpawn = function(){ if(SW && regions.some(r=>r.name===cSpawn)) SW.spawn=cSpa
   const r=regions.find(r=>r.name===SW.spawn)||regions[0]; const cx=Math.floor(r.x+r.w/2), cy=Math.floor(r.y+r.h/2); let best=null, bd=1e9;
   for(let y=r.y;y<r.y+r.h;y++) for(let x=r.x;x<r.x+r.w;x++){ const i=idx(x,y); if((map[i]!==TL.WALK&&map[i]!==TL.ASPH)||objGrid[i]) continue; const d=Math.hypot(x-cx,y-cy); if(d<bd){ bd=d; best=[x,y]; } }
   return best || _findSpawn(); };
+// trava de segurança: um erro num quadro não pode congelar o jogo inteiro
+const _updSafe = update;
+let errCount=0;
+update = function(dt){ try{ _updSafe(dt); } catch(e){ console.error(e); if(++errCount===1 && typeof Journal!=='undefined') Journal.add('system','','(erro interno registrado — o jogo segue)'); } };
+const _urSafe = updateRaider;
+updateRaider = function(r,dt){ try{ _urSafe(r,dt); } catch(e){ console.error(e); } };
+const _renderSafe = render; render = function(now){ try{ _renderSafe(now); } catch(e){ console.error(e); } };
+const _hudSafe = updateHud; updateHud = function(dt){ try{ _hudSafe(dt); } catch(e){ console.error(e); } };

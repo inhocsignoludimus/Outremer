@@ -220,6 +220,7 @@ const MATS = [
   { face:'#5c5852', line:'#403c38', cap:'#262422', pat:'ashlar' },  // 10 torre
   { face:'#a89a80', line:'#3a2a1c', cap:'#2e2418', pat:'timber' },  // 11 enxaimel (reboco e vigas)
   { face:'#7a5a3a', line:'#563c24', cap:'#2e2418', pat:'planks' },  // 12 tábuas
+  { face:'#c8a878', line:'#9a7c54', cap:'#5a4430', pat:'ashlar' },  // 13 arenito (Outremer)
 ];
 const CARPETS = ['#5a3434','#3a4658','#5b5440','#3f4d3f','#4e3a52'];
 
@@ -357,7 +358,7 @@ function buildWorld(){
     else if(p.t==='trash') addObj({type:'trash',x:p.x,y:p.y,solid:true,container:'trash'});
     else if(p.t==='crate') addObj({type:'crate',x:p.x,y:p.y,solid:true,container:'crate'});
     else if(p.t==='pump') addObj({type:'pump',x:p.x,y:p.y,solid:true});
-    else if(['anvil','logs','keg','hay','statue','banner','pine','palm','rock','deadtree','cactus','brazier','hoard','stairs_down','stairs_up'].includes(p.t)) addObj({type:p.t,x:p.x,y:p.y,solid:true,v:Math.floor(th(p.x,p.y,3)*3)});
+    else if(['anvil','logs','keg','hay','statue','banner','pine','palm','rock','deadtree','cactus','brazier','hoard','stairs_down','stairs_up','awning','olive'].includes(p.t)) addObj({type:p.t,x:p.x,y:p.y,solid:true,v:Math.floor(th(p.x,p.y,3)*3)});
     else if(p.t==='moongate'){ if(areaFree(p.x,p.y,2,1)) addObj({type:'moongate',x:p.x,y:p.y,w:2,solid:true,portal:p.portal}); }
     else if(p.t==='fountain'){ if(areaFree(p.x,p.y,2,2)) addObj({type:'fountain',x:p.x,y:p.y,w:2,h:2,solid:true}); }
     else if(p.t==='container') addObj({type:'shipping',x:p.x,y:p.y,w:2,solid:true,container:'warehouse',c:p.c});

@@ -163,3 +163,32 @@ renderMap = function(now){ _rMap(now); if(!SW||!player) return;
   for(const l of SW.lairs||[]){ const x=ox+l.x*s, y=oy+l.y*s; g.fillStyle='#c83a2a'; g.fillRect(x-4*dpr,y-4*dpr,8*dpr,8*dpr); g.fillStyle='#1a0a08'; g.fillRect(x-2*dpr,y-2*dpr,1.5*dpr,1.5*dpr); g.fillRect(x+.5*dpr,y-2*dpr,1.5*dpr,1.5*dpr);
     if(mapZoom>0){ g.fillStyle='#e8a090'; g.fillText(l.name,x,y+12*dpr); } }
 };
+// ---------------- estilo do Oriente (Aelia Sancta, Acre, deserto): arenito, terraços, cúpulas, bazar ----------------
+const _mkRoof = makeRoof;
+makeRoof = function(b){
+  if(!b.levant && !b.dome) return _mkRoof(b);
+  const w=b.w*T+4, h=(b.h-1)*T+22, c=document.createElement('canvas'); c.width=w; c.height=h; const g=c.getContext('2d'), r=b.roof||'#d8c8a0';
+  g.fillStyle=r; g.fillRect(0,0,w,h);
+  for(let i=0;i<w*h/30;i++){ g.fillStyle=th(b.id,i,8)>.5?shade(r,1.08):shade(r,.9); g.fillRect(Math.floor(th(b.id,i,7)*w),Math.floor(th(b.id,i,9)*h),1,1); }
+  g.fillStyle=shade(r,1.2); g.fillRect(0,0,w,3); g.fillRect(0,0,3,h); g.fillStyle=shade(r,.7); g.fillRect(w-3,0,3,h); g.fillRect(0,h-4,w,4);   // parapeito
+  for(let x=4;x<w-4;x+=10){ g.fillStyle=shade(r,.8); g.fillRect(x,h-9,2,2); }
+  if(b.dome){ const cx=w/2, cy=h/2, R=Math.min(w,h)*.32; g.fillStyle=shade(r,.75); g.beginPath(); g.ellipse(cx,cy+3,R+2,R*.9+2,0,0,7); g.fill();
+    g.fillStyle=b.dome; g.beginPath(); g.ellipse(cx,cy,R,R*.9,0,0,7); g.fill(); g.fillStyle=shade(b.dome,1.25); g.beginPath(); g.ellipse(cx-R*.35,cy-R*.35,R*.35,R*.3,0,0,7); g.fill();
+    g.fillStyle=shade(b.dome,.7); g.fillRect(cx-1,cy-R-6,2,7); if(b.t==='church'){ g.fillStyle='#d8b040'; g.fillRect(cx-1,cy-R-10,2,6); g.fillRect(cx-3,cy-R-8,6,2); } else { g.fillStyle='#d8b040'; g.beginPath(); g.arc(cx,cy-R-7,2,0,7); g.fill(); } }
+  else if(th(b.id,1,3)>.6){ g.fillStyle=shade(r,.8); g.fillRect(w*.2,h*.25,w*.25,h*.3); g.fillStyle='#4a6a2a'; g.fillRect(w*.22,h*.28,3,3); }  // pátio com vaso
+  return c; };
+const _dtL = drawTile;
+drawTile = function(g,x,y,px,py){ const i=idx(x,y);
+  if(map[i]===TL.ASPH && regionId[i]!==255 && regions[regionId[i]] && regions[regionId[i]].style==='levant' && !(tileAt(x,y-1)===TL.WATER||tileAt(x,y+1)===TL.WATER)){
+    g.fillStyle='#b89a6c'; g.fillRect(px,py,T,T); const o=(y%2)*4;
+    for(let r=0;r<2;r++) for(let k=-1;k<2;k++){ const sx=px+k*8+((y*2+r)%2)*4; g.fillStyle=shade('#c8aa7a',.9+th(x*3+k,y*2+r,5)*.2); g.fillRect(Math.max(px,sx+1),py+r*8+1,Math.min(7,px+T-sx-1),6); }
+    return; }
+  if((map[i]===TL.GRASS||map[i]===TL.PARK) && regionId[i]!==255 && regions[regionId[i]] && regions[regionId[i]].style==='levant'){ g.fillStyle='#b8996a'; g.fillRect(px,py,T,T); speck(g,px,py,['#c4a676','#a88a5c','#cdb184'],16,x,y); if(th(x,y,81)>.94){ g.fillStyle='#7a8a4a'; g.fillRect(px+Math.floor(th(x,y,82)*13),py+Math.floor(th(x,y,83)*13),2,1); } return; }
+  return _dtL(g,x,y,px,py); };
+const _dObjL = drawObj;
+drawObj = function(g,o,sx,sy,now){ const P=(a,b,w,h,c)=>{ g.fillStyle=c; g.fillRect(sx+a,sy+b,w,h); };
+  if(o.type==='awning'){ const cols=[['#a02a1a','#e8d8b0'],['#2a5a8a','#e8d8b0'],['#3a6a2a','#e8c860'],['#7a3a6a','#e8d8b0']][Math.floor(th(o.x,o.y,5)*4)];
+    P(1,4,2,12,'#5a3a1e'); P(13,4,2,12,'#5a3a1e'); for(let k=0;k<8;k++) P(k*2,-2,2,7,k%2?cols[1]:cols[0]); P(0,5,16,1,shade(cols[0],.7));
+    P(3,10,10,5,'#8a6a3a'); P(4,9,3,2,['#c8a040','#a03a2a','#4a8a3a'][o.x%3]); P(8,9,3,2,['#e8c060','#6a3a8a','#c86a2a'][o.y%3]); return; }
+  if(o.type==='olive'){ P(7,6,2,10,'#5a4a3a'); P(5,10,2,2,'#5a4a3a'); P(2,-2,12,9,'#6a7a4a'); P(1,1,14,5,'#5e6e42'); P(4,-3,7,2,'#7a8a5a'); for(let k=0;k<4;k++) P(3+k*3,1+(k%2)*3,1,1,'#2a3a1a'); return; }
+  return _dObjL(g,o,sx,sy,now); };
