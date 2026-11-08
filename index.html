@@ -340,10 +340,10 @@ body.apk #btn-fs, body.apk #t-fs{display:none!important}</style>
     <button class="linkbtn" id="saves-close">Close</button>
   </div></div>
   <div id="front-options" class="front-pop"><div class="create-box">
-    <h2>Options</h2>
-    <label class="opt"><input type="checkbox" id="o-shake"> Screen shake</label>
-    <label class="opt"><input type="checkbox" id="o-blood"> Blood effects</label>
-    <label class="opt">Day length <select id="o-day"><option value="normal">Normal (8 min)</option><option value="long">Long (16 min)</option></select></label>
+    <h2>Opções</h2>
+    <label class="opt"><input type="checkbox" id="o-shake"> Tremor de tela</label>
+    <label class="opt"><input type="checkbox" id="o-blood"> Sangue</label>
+    <label class="opt">Duração do dia <select id="o-day"><option value="normal">Normal (8 min)</option><option value="long">Longo (16 min)</option></select></label>
     <div class="controls-help">Keyboard & mouse: WASD move · Shift run · E use / talk / drive · hold RIGHT mouse to aim, LEFT to attack · I bag · B build · C craft · M map · H mark home · Esc menu<br>Touch: drag on the left to move · USE · ATTACK · RUN · on-screen buttons</div>
     <button class="linkbtn" id="options-close">Close</button>
   </div></div>
@@ -471,17 +471,18 @@ body.apk #btn-fs, body.apk #t-fs{display:none!important}</style>
 </div></div>
 
 <div id="menu-panel" class="gpanel"><div class="gbox narrow">
-  <div class="ghead"><b>PAUSED</b></div>
-  <button class="mbtn" id="m-resume">Resume</button>
-  <button class="mbtn" id="m-save">Save game (F5)</button>
-  <button class="mbtn" id="m-load">Load last save</button>
-  <button class="mbtn" id="m-export">Export save file</button>
-  <button class="mbtn" id="m-import">Import save file</button>
-  <button class="mbtn" id="m-home">Mark this place as home (H)</button>
-  <button class="mbtn" id="m-skip">Skip 3 hours (testing)</button>
-  <button class="mbtn" id="m-quit">Quit to title</button>
-  <div id="save-status">Not saved yet this session.</div>
-  <div id="export-box" style="display:none"><textarea id="export-text" readonly></textarea><button class="mbtn" id="export-copy">Copy save text</button></div>
+  <div class="ghead"><b>PAUSADO</b></div>
+  <button class="mbtn" id="m-resume">Voltar ao jogo</button>
+  <button class="mbtn" id="m-save">Salvar (F5)</button>
+  <button class="mbtn" id="m-load">Carregar o último save</button>
+  <button class="mbtn" id="m-export">Exportar save</button>
+  <button class="mbtn" id="m-import">Importar save</button>
+  <button class="mbtn" id="m-home">Marcar aqui como casa (H)</button>
+  <button class="mbtn" id="m-skip">Esperar 3 horas</button>
+  <button class="mbtn" id="m-ui">Interface: Estilo UO</button>
+  <button class="mbtn" id="m-quit">Voltar à tela inicial</button>
+  <div id="save-status">Ainda não salvou nesta sessão.</div>
+  <div id="export-box" style="display:none"><textarea id="export-text" readonly></textarea><button class="mbtn" id="export-copy">Copiar texto do save</button></div>
 </div></div>
 
 <script src="js/world.js"></script>
@@ -511,5 +512,6 @@ body.apk #btn-fs, body.apk #t-fs{display:none!important}</style>
 <script src="js/loyalty.js"></script>
 <script src="js/sound.js"></script>
 <script src="js/ui.js"></script>
+<script src="js/uo_ui.js"></script>
 </body>
 </html>
