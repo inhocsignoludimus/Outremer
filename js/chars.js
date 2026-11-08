@@ -267,7 +267,7 @@ function renderSlots(){
   box.querySelectorAll('canvas[data-i]').forEach(c=>{ const s=readSlot(+c.dataset.i); const g=c.getContext('2d'); g.imageSmoothingEnabled=false;
     drawHuman(g,10,26,{face:'down',phase:0,moving:false,look:s.look||randomLook(),weapon:s.p&&s.p.weapon||'fists',wAng:-.6,head:s.equip&&s.equip.head,body:s.equip&&s.equip.body}); });
   box.querySelectorAll('[data-play]').forEach(b=>b.onclick=()=>{ curSlot=+b.dataset.play; closeFront(); continueGame(); });
-  box.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{ const s=readSlot(+b.dataset.del); if(confirm(`Apagar ${s.name} para sempre?`)){ localStorage.removeItem(SLOT_KEY(+b.dataset.del)); renderSlots(); } });
+  box.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{ if(b.dataset.armed){ localStorage.removeItem(SLOT_KEY(+b.dataset.del)); renderSlots(); return; } b.dataset.armed=1; b.textContent='Apagar mesmo?'; b.style.background='#7a1a14'; b.style.color='#fff'; setTimeout(()=>{ if(b.isConnected){ delete b.dataset.armed; b.textContent='✕'; b.style.background=''; b.style.color=''; } },3000); });
   box.querySelectorAll('[data-new]').forEach(b=>b.onclick=()=>{ curSlot=+b.dataset.new; closeFront(); startStory(); });
   document.getElementById('saves-close').onclick=closeFront;
 }
