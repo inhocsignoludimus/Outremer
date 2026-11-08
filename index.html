@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0c0a09"><link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" href="assets/icon-192.png">
+<title>Outremer — pixel</title>
+<style>@font-face{font-family:'Pixelify Sans';font-style:normal;font-weight:400;font-display:swap;src:url(assets/fonts/pixelify-sans-latin-400-normal.woff2) format('woff2')}@font-face{font-family:'Pixelify Sans';font-style:normal;font-weight:600;font-display:swap;src:url(assets/fonts/pixelify-sans-latin-600-normal.woff2) format('woff2')}@font-face{font-family:'Cinzel';font-style:normal;font-weight:500;font-display:swap;src:url(assets/fonts/cinzel-latin-500-normal.woff2) format('woff2')}@font-face{font-family:'Cinzel';font-style:normal;font-weight:700;font-display:swap;src:url(assets/fonts/cinzel-latin-700-normal.woff2) format('woff2')}@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:400;font-display:swap;src:url(assets/fonts/cormorant-garamond-latin-400-italic.woff2) format('woff2')}
+body.apk #btn-fs, body.apk #t-fs{display:none!important}</style>
+<style>
+  :root{
+    --ui:'Pixelify Sans', ui-monospace, monospace;
+    --panel:rgba(14,12,10,.86); --line:#3a322a; --txt:#d9cfc1; --dim:#8c8172; --accent:#d69a4c;
+    --slot:min(44px, calc((100vw - 56px) / 10));
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;background:#000;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;
+    font-family:var(--ui);color:var(--txt);-webkit-tap-highlight-color:transparent}
+  canvas#game{position:fixed;left:0;top:0;display:block;image-rendering:pixelated}
+
+  /* ---------- Character creation ---------- */
+  #screen-create{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;overflow:auto;
+    background:radial-gradient(ellipse at 50% 30%, #2a1f17 0%, #0c0a09 70%);padding:16px;touch-action:pan-y}
+  .create-box{background:#14110e;border:2px solid var(--line);padding:28px 30px;width:500px;max-width:100%;box-shadow:0 0 0 4px #0a0807}
+  .create-box h1{font-size:34px;color:var(--accent);letter-spacing:3px;font-weight:600}
+  .subtitle{color:var(--dim);font-size:15px;margin:4px 0 24px}
+  label{display:block;font-size:14px;color:var(--dim);margin-bottom:6px}
+  input[type=text]{width:100%;padding:10px 12px;background:#0b0908;border:2px solid var(--line);color:var(--txt);
+    font-family:var(--ui);font-size:17px;margin-bottom:18px}
+  input[type=text]:focus{outline:none;border-color:var(--accent)}
+  .professions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px}
+  .prof{background:#0b0908;border:2px solid var(--line);padding:9px 11px;cursor:pointer}
+  .prof:hover{border-color:#6a5640}
+  .prof.selected{background:#2a1e14;border-color:var(--accent)}
+  .prof strong{display:block;color:#eadfce;font-size:16px;font-weight:600}
+  .prof span{font-size:13px;color:#9a8e7e;line-height:1.25;display:block;margin-top:2px}
+  .prof em{font-style:normal;font-size:11px;color:#7d6a52;border:1px solid #4a3d30;padding:0 4px;margin-left:4px;vertical-align:2px}
+  .selected-count{font-size:14px;color:var(--dim);margin-bottom:10px}
+  button{font-family:var(--ui)}
+  button.start{width:100%;padding:12px;background:#7a4b22;border:2px solid #a8692f;color:#fff3e2;font-size:18px;cursor:pointer}
+  button.start:hover{background:#8c5627}
+  button.start:disabled{background:#1f1914;border-color:#2e261e;color:#5f554a;cursor:not-allowed}
+  .controls-help{margin-top:14px;font-size:13px;color:#7c7264;line-height:1.5}
+
+  /* ---------- HUD ---------- */
+  #hud{position:fixed;inset:0;pointer-events:none;z-index:50;display:none}
+  .panel{background:var(--panel);border:2px solid var(--line)}
+  #stats{position:absolute;top:10px;left:10px;padding:8px 10px;width:170px}
+  #who{font-size:14px;color:#eadfce;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #who small{display:block;font-size:12px;color:var(--dim)}
+  .stat{margin-top:6px;font-size:11px;color:var(--dim);letter-spacing:1px}
+  .bar{height:7px;background:#1d1814;margin-top:2px;border:1px solid #000}
+  .bar>div{height:100%;transition:width .2s}
+  #bar-health{background:#b8433a}#bar-stamina{background:#5b9a64}#bar-hunger{background:#c79a3e}
+  #clock{position:absolute;top:10px;right:10px;padding:8px 10px;text-align:right;font-size:15px;pointer-events:auto}
+  #clock small{display:block;color:var(--dim);font-size:12px}
+  #clock-place{color:#d6b47a!important;margin-top:2px}
+  #btn-map,#btn-skip{margin-top:6px;background:#221b15;border:1px solid #4a3d30;color:#a8998a;font-size:12px;padding:2px 6px;cursor:pointer}
+  #toasts{position:absolute;top:12px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:4px;width:min(440px,52vw)}
+  @media (max-width:700px){ #toasts{top:235px;width:88vw} #stats{width:150px} }
+  .toast{background:rgba(10,8,7,.88);border:1px solid var(--line);padding:5px 10px;font-size:14px;text-align:center;transition:opacity .5s}
+  #hotbar{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:4px;padding:5px;pointer-events:auto}
+  .slot{width:var(--slot);height:var(--slot);background:#0d0b09;border:2px solid #2d261f;position:relative;cursor:pointer;
+    display:flex;align-items:center;justify-content:center}
+  .slot:hover{border-color:#5a4a3a}
+  .slot.lit{border-color:#e0a84e;box-shadow:0 0 8px #e0a84e88}
+  .slot.eq{border-color:#b9c7cf;box-shadow:inset 0 0 0 1px #b9c7cf55}
+  #weap{margin-top:7px;font-size:13px;color:#cdbfae;border-top:1px solid #2d261f;padding-top:5px}
+  #weap b{color:#eadfce;font-weight:600}
+  body.playing canvas#game{cursor:crosshair}
+  #hurt{position:fixed;inset:0;pointer-events:none;z-index:40;box-shadow:inset 0 0 120px 40px rgba(170,20,10,.7);opacity:0;transition:opacity .08s}
+  .slot img{width:72%;height:72%;image-rendering:pixelated}
+  .slot .k{position:absolute;top:1px;left:3px;font-size:10px;color:#5d5246}
+  .slot .q{position:absolute;bottom:0;right:3px;font-size:12px;color:#eadfce;text-shadow:1px 1px 0 #000}
+
+  /* ---------- Touch ---------- */
+  #touch{display:none}
+  body.touch #touch{display:block}
+  #joy{position:absolute;width:110px;height:110px;border-radius:50%;border:2px solid rgba(214,154,76,.35);background:rgba(20,15,10,.25);
+    display:none;transform:translate(-50%,-50%)}
+  #knob{position:absolute;left:50%;top:50%;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;background:rgba(214,154,76,.55)}
+  .tbtn{position:absolute;right:14px;width:68px;height:68px;border-radius:50%;background:rgba(20,15,10,.6);border:2px solid #6a5640;
+    color:#eadfce;font-size:15px;display:flex;align-items:center;justify-content:center;pointer-events:auto}
+  .tbtn.on{background:rgba(122,75,34,.85);border-color:var(--accent)}
+  #btn-atk{bottom:calc(var(--slot) + 24px);width:76px;height:76px;background:rgba(90,28,20,.7);border-color:#a8483a}
+  #btn-atk.on{background:rgba(150,40,28,.9)}
+  #btn-use{bottom:calc(var(--slot) + 112px)}
+  #btn-run{bottom:calc(var(--slot) + 30px);right:100px;width:58px;height:58px;font-size:13px}
+  #joy-hint{position:absolute;left:18px;bottom:calc(var(--slot) + 40px);font-size:12px;color:#6d6255}
+
+  /* ---------- World map ---------- */
+  #worldmap{position:fixed;inset:0;width:100vw;height:100vh;z-index:60;display:none;image-rendering:pixelated}
+  #map-ui{position:fixed;left:0;right:0;top:0;z-index:61;display:none;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;
+    padding:10px;font-size:15px;color:#d6b47a;background:linear-gradient(#0b0a09,rgba(11,10,9,0))}
+  #map-ui button{background:#221b15;border:1px solid #4a3d30;color:#d9cfc1;font-size:14px;padding:4px 10px;cursor:pointer}
+  #map-ui .legend{font-size:12px;color:#a89a88;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+  #map-ui .legend i{display:inline-block;width:10px;height:10px;margin-left:6px}
+  /* ---------- v0.5 panels ---------- */
+  .hudbtns{display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end;margin-top:6px;max-width:190px;margin-left:auto}
+  .hudbtns button{background:#221b15;border:1px solid #4a3d30;color:#cdbfae;font-size:12px;padding:3px 6px;cursor:pointer;pointer-events:auto}
+  body.building .hudbtns #btn-build{background:#7a4b22;border-color:#d69a4c;color:#fff}
+  #btn-skip{margin-top:0}
+  button.alt{margin-top:8px;background:#2a3a22;border-color:#5a7a40}
+  button.alt:hover{background:#344a2a}
+  .linkbtn{background:none;border:none;color:#8c8172;text-decoration:underline;font-size:13px;margin-top:10px;cursor:pointer}
+  .slot.sel{border-color:#e0a84e!important;background:#2a1e14}
+  .slot.poor{opacity:.45}
+  .slot.exit{color:#d9cfc1;font-size:18px}
+  .slot.build img{width:80%;height:80%}
+  #build-info{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(var(--slot) + 30px);background:rgba(10,8,7,.85);border:1px solid var(--line);
+    padding:4px 10px;font-size:13px;color:#d6b47a;display:none;max-width:92vw;text-align:center}
+  body.building #build-info{display:block}
+  body.building #hotbar .slot{width:min(44px,calc((100vw - 70px) / 12));height:min(44px,calc((100vw - 70px) / 12))}
+  body.touch #build-info{bottom:auto;top:235px}
+  #fade{position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;z-index:90;transition:opacity .6s}
+  .gpanel{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55);padding:10px}
+  .gbox{background:#14110e;border:2px solid var(--line);box-shadow:0 0 0 4px #0a0807;padding:14px;max-width:100%;max-height:100%;overflow:auto;width:560px}
+  .gbox.narrow{width:320px;display:flex;flex-direction:column;gap:6px}
+  .ghead{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;color:var(--accent);font-size:18px}
+  .ghead button,#inv-acts button,.craft-row button{background:#221b15;border:1px solid #4a3d30;color:#d9cfc1;font-size:14px;padding:4px 10px;cursor:pointer}
+  .glabel{font-size:12px;color:var(--dim);margin:8px 0 4px;letter-spacing:1px}
+  .grid{display:grid;grid-template-columns:repeat(10,1fr);gap:4px}
+  .grid .slot{width:auto;height:auto;aspect-ratio:1}
+  #inv-info{margin-top:10px;font-size:14px;color:#cdbfae;min-height:20px}
+  #inv-acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .craft-row{display:flex;align-items:center;gap:10px;padding:6px;border-bottom:1px solid #2a231c}
+  .craft-row img{width:32px;height:32px;image-rendering:pixelated}
+  .craft-row div{flex:1}.craft-row small{display:block;color:var(--dim);font-size:12px}
+  .craft-row.poor{opacity:.55}.craft-row button:disabled{opacity:.4;cursor:not-allowed}
+  .craft-note{font-size:12px;color:#8c8172;margin-top:10px;line-height:1.4}
+  .mbtn{background:#221b15;border:1px solid #4a3d30;color:#d9cfc1;font-size:15px;padding:8px;cursor:pointer;text-align:left}
+  .mbtn:hover{border-color:var(--accent)}
+  #save-status{font-size:12px;color:#a89a88;margin-top:6px}
+  #export-text{width:100%;height:90px;background:#0b0908;color:#a89a88;border:1px solid #3a322a;font-size:10px;margin-top:6px}
+  .look-row{display:flex;gap:6px;margin-bottom:8px}
+  .seg{flex:1;background:#0b0908;border:2px solid var(--line);color:#cdbfae;font-size:15px;padding:7px;cursor:pointer}
+  .seg.on{background:#2a1e14;border-color:var(--accent);color:#fff}
+  .seg.rand{flex:1.3}
+  .look-box{display:flex;align-items:center;gap:12px;margin-bottom:16px;background:#0b0908;border:2px solid var(--line);padding:6px 10px}
+  #preview{width:192px;height:76px;image-rendering:pixelated}
+  #look-desc{font-size:13px;color:#9a8e7e;line-height:1.3}
+  .wear-row{display:flex;gap:6px;align-items:center}
+  .wear-row .slot{width:46px;height:46px}
+  .armor-txt{font-size:12px;color:#a89a88;margin-left:6px}
+  /* ---------- Front end ---------- */
+  .front{position:fixed;inset:0;z-index:110;display:none;align-items:center;justify-content:center;background:#000;overflow:auto}
+  #screen-splash{cursor:pointer}
+  .logo-wrap{text-align:center;opacity:0;transition:opacity 1.4s ease, filter 1.6s ease;filter:brightness(1.6)}
+  #screen-splash.in .logo-wrap{opacity:1;filter:brightness(1)}
+  #screen-splash.out .logo-wrap{opacity:0;filter:brightness(.2);transition:opacity 1.5s ease, filter 1.5s ease}
+  #logo-seal{width:min(300px,52vw,40vh);display:block;margin:0 auto;filter:drop-shadow(0 0 28px rgba(255,140,80,.45)) drop-shadow(0 6px 10px rgba(0,0,0,.8))}
+  #screen-splash.in #logo-seal{animation:sealglow 4.2s ease-in-out forwards}
+  @keyframes sealglow{0%{filter:brightness(1.25) drop-shadow(0 0 40px rgba(255,160,90,.7))}55%{filter:brightness(1) drop-shadow(0 0 26px rgba(255,140,80,.45))}
+    62%{filter:brightness(.55) drop-shadow(0 0 6px rgba(255,140,80,.15))}66%{filter:brightness(1) drop-shadow(0 0 24px rgba(255,140,80,.45))}
+    100%{filter:brightness(.85) drop-shadow(0 0 18px rgba(255,130,70,.3))}}
+  .logo-name{font-family:'Cinzel',serif;font-weight:700;font-size:clamp(26px,5vw,44px);letter-spacing:.14em;color:#efe4d0;margin-top:22px;text-shadow:0 0 18px rgba(255,210,150,.35)}
+  .logo-sub{font-family:'Cinzel',serif;font-weight:500;font-size:clamp(14px,2.4vw,20px);letter-spacing:.6em;color:#c0473a;margin-top:6px;padding-left:.6em}
+  .logo-motto{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:clamp(16px,2.4vw,21px);color:#9a8e7c;margin-top:12px}
+  .presents{margin-top:26px;font-family:'Cinzel',serif;font-size:15px;letter-spacing:.5em;color:#7c7062;opacity:0;transition:opacity 1.2s}
+  #screen-splash.show-presents .presents{opacity:1}
+  #title-art{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;object-fit:cover}
+  .title-box{position:relative;text-align:center;padding:20px}
+  .game-title{font-size:clamp(44px,9vw,92px);letter-spacing:10px;color:#f4e2c0;font-weight:600;animation:lightsout 6s ease-out forwards}
+  @keyframes lightsout{0%{text-shadow:0 0 40px #ffd890,0 0 80px #ffb050;color:#fff6dc}35%{text-shadow:0 0 30px #ffd890;color:#fff0d0}
+    40%{text-shadow:none;color:#6a5a48}44%{text-shadow:0 0 24px #ffd890;color:#f4e2c0}48%{text-shadow:none;color:#5a4c3c}
+    60%{text-shadow:0 0 10px rgba(255,200,120,.4);color:#c8b090}100%{text-shadow:0 0 6px rgba(255,190,110,.25);color:#b49c7c}}
+  .tagline{color:#8c8172;font-size:16px;margin:6px 0 30px;letter-spacing:2px}
+  .menu{display:flex;flex-direction:column;gap:10px;align-items:center}
+  .menu button{width:260px;max-width:80vw;background:rgba(14,12,10,.8);border:2px solid #3a322a;color:#e8dcc8;font-size:20px;padding:10px;cursor:pointer;font-family:var(--ui)}
+  .menu button:hover{border-color:var(--accent);color:#fff}
+  .studio-tag{position:absolute;bottom:12px;left:0;right:0;text-align:center;font-size:12px;color:#5a5046}
+  .front-pop{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.6);padding:16px}
+  .front-pop h2{color:var(--accent);margin-bottom:12px}
+  .front-pop p{color:#cdbfae;margin-bottom:14px;line-height:1.4}
+  .credits{text-align:center}
+  label.opt{display:flex;align-items:center;gap:10px;font-size:16px;color:#d9cfc1;margin-bottom:12px}
+  label.opt select{background:#0b0908;color:#d9cfc1;border:1px solid #3a322a;font-family:var(--ui);font-size:14px;padding:3px}
+  .story-box{width:min(720px,94vw);text-align:left}
+  #story-art{width:100%;aspect-ratio:320/150;image-rendering:pixelated;border:2px solid #2a231c;display:block}
+  #story-text{min-height:120px;margin-top:18px;font-size:clamp(16px,2.4vw,21px);line-height:1.5;color:#e0d4c2;white-space:pre-line}
+  .story-nav{display:flex;align-items:center;gap:14px;margin-top:14px}
+  .story-nav .start{width:auto;padding:10px 22px;margin-left:auto}
+  #story-step{color:#6a6055;font-size:13px}
+  #screen-create .linkbtn{display:block}
+  /* ---------- v0.11 UI ---------- */
+  .stats-row{display:flex;gap:8px;align-items:flex-start}.stats-bars{flex:1}
+  #mini-body{width:32px;height:46px;image-rendering:pixelated;margin-top:6px}
+  #stats{width:190px}
+  #bar-thirst{background:#4a8ac8}
+  #conds{font-size:11px;color:#e08a70;margin-top:4px;line-height:1.3}
+  #conds:empty{display:none}
+  .gbox.wide{width:min(1000px,98vw)}
+  .inv-cols{display:flex;gap:14px;align-items:flex-start}
+  .icol{min-width:0}
+  .body-col{width:190px;flex:none;background:#0e0c0a;border:1px solid #2a231c;padding:8px}
+  #body-cv{width:128px;height:184px;image-rendering:pixelated;display:block;margin:4px auto;cursor:pointer}
+  .hint{font-size:11px;color:#6d6255;text-align:center}
+  .vit{display:grid;grid-template-columns:52px 1fr 26px;gap:5px;align-items:center;font-size:12px;color:#a89a88;margin-top:5px}
+  .vit .bar{margin:0}.vit b{font-weight:400;color:#d9cfc1;text-align:right}
+  .conds{margin-top:8px;display:flex;flex-direction:column;gap:2px}
+  .conds i{font-style:normal;font-size:12px;color:#c8bca8}.conds i.bad{color:#f08a6a}.conds i.ok{color:#8ac87a}
+  .partinfo{margin-top:8px;font-size:12px;color:#e8d8b8;border-top:1px solid #2a231c;padding-top:6px}.partinfo small{color:#8c8172}
+  .main-col{flex:1}
+  .store-col{width:250px;flex:none;background:#0e0c0a;border:1px solid #2a231c;padding:8px;display:none}
+  .grid.g6{grid-template-columns:repeat(6,1fr)}
+  #inv-detail{display:flex;gap:10px;align-items:flex-start;margin-top:10px;border-top:1px solid #2a231c;padding-top:8px;min-height:64px}
+  #inv-icon img{width:48px;height:48px;image-rendering:pixelated;background:#0b0908;border:1px solid #2d261f}
+  #inv-icon:empty{display:none}
+  #inv-store-acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  #inv-store-acts button,#act-list button{background:#221b15;border:1px solid #4a3d30;color:#d9cfc1;font-size:14px;padding:6px 10px;cursor:pointer;text-align:left}
+  #act-list{display:flex;flex-direction:column;gap:6px}
+  #act-list button:hover{border-color:var(--accent)}
+  #act-list .info{font-size:12px;color:#8c8172;padding:2px}
+  .tabs{display:flex;gap:4px}
+  .tab{background:#14110e;border:1px solid #3a322a;color:#8c8172;font-size:13px;padding:3px 10px;cursor:pointer}
+  .tab.on{background:#2a1e14;border-color:var(--accent);color:#f0e0c8}
+  .ctabs{margin-bottom:8px;flex-wrap:wrap}
+  .craft-row .ings{display:flex;gap:6px;flex-wrap:wrap;margin-top:3px}
+  .ing{display:inline-flex;align-items:center;gap:3px;font-size:12px;color:#8ac87a}
+  .ing.miss{color:#e07a5a}.ing img{width:16px;height:16px}
+  .craft-row .desc{font-size:11px;color:#8c8172}
+  #build-info{pointer-events:auto}
+  #build-info .tabs{justify-content:center;margin-bottom:4px}
+  #build-info .bdesc{font-size:13px}
+  @media (max-width:760px){ .inv-cols{flex-direction:column} .body-col,.store-col{width:100%} #body-cv{width:96px;height:138px} }
+  .tlist{display:flex;flex-direction:column;gap:3px;max-height:60vh;overflow:auto}
+  .trow{display:grid;grid-template-columns:24px 1fr 52px 54px;gap:6px;align-items:center;font-size:14px;padding:3px;border-bottom:1px solid #2a231c}
+  .trow img{width:24px;height:24px;image-rendering:pixelated}.trow small{color:#8c8172}.trow b{color:#e8c050;font-weight:400;text-align:right}
+  .trow button{background:#221b15;border:1px solid #4a3d30;color:#d9cfc1;font-size:13px;padding:3px 6px;cursor:pointer}.trow button:disabled{opacity:.4}
+  #trade-cash{color:#e8c050;font-size:15px}
+  .keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px}
+  .keypad button{text-align:center!important;font-size:18px!important;padding:10px!important}
+  #trade-buy,#trade-sell{max-height:60vh;overflow:auto}
+  #map-ui{pointer-events:auto}
+
+  /* ---------- Phones in landscape (short screens): compact HUD ---------- */
+  @media (max-height:520px){
+    :root{ --slot:min(34px, calc((100vw - 330px) / 10)); }
+    #stats{top:4px;left:4px;width:122px;padding:4px 6px}
+    #who{display:none}
+    .stats-row{gap:4px}
+    .stat{margin-top:2px;font-size:8px;letter-spacing:.5px;line-height:1}
+    .bar{height:4px;margin-top:1px}
+    #mini-body{width:20px;height:29px;margin-top:2px}
+    #conds{font-size:9px;margin-top:2px}
+    #weap{font-size:10px;margin-top:3px;padding-top:2px}
+    #weap small{font-size:9px}
+    #clock{top:4px;right:4px;padding:4px 6px;font-size:11px}
+    #clock small{font-size:9px}
+    .hudbtns{gap:2px;margin-top:3px;max-width:160px}
+    .hudbtns button{font-size:9px;padding:2px 4px}
+    #toasts{top:4px;width:min(360px,42vw);gap:2px}
+    .toast{font-size:10px;padding:2px 6px}
+    #hotbar{bottom:3px;gap:2px;padding:2px}
+    .slot .k{font-size:8px}.slot .q{font-size:10px}
+    .tbtn{width:50px;height:50px;font-size:11px;right:8px}
+    #btn-atk{width:58px;height:58px;bottom:12px}
+    #btn-use{bottom:80px}
+    #btn-run{width:44px;height:44px;font-size:10px;right:72px;bottom:14px}
+    #joy-hint{bottom:12px;font-size:10px}
+    #joy{width:90px;height:90px}
+    body.touch #build-info{top:auto;bottom:calc(var(--slot) + 12px)}
+    #build-info{font-size:10px;padding:2px 6px}
+    #build-info .tab{font-size:10px;padding:1px 6px}
+    body.building #hotbar .slot{width:min(32px,calc((100vw - 330px) / 12));height:min(32px,calc((100vw - 330px) / 12))}
+    .gpanel{padding:4px}
+    .gbox{padding:8px}
+    .ghead{font-size:14px;margin-bottom:4px}
+    .glabel{margin:4px 0 2px;font-size:10px}
+    .body-col{width:130px;padding:4px}
+    #body-cv{width:72px;height:104px}
+    .vit{font-size:10px;grid-template-columns:42px 1fr 22px;margin-top:2px}
+    .conds i,.partinfo{font-size:10px}
+    .inv-cols{flex-direction:row;gap:8px}
+    .store-col{width:180px}
+    #inv-detail{min-height:40px;margin-top:4px;padding-top:4px}
+    #inv-icon img{width:32px;height:32px}
+    #inv-info{font-size:12px}
+    #inv-acts button,.ghead button{font-size:12px;padding:3px 8px}
+    .craft-row{padding:3px}.craft-row img{width:24px;height:24px}
+    .grid{grid-template-columns:repeat(10,minmax(0,34px));gap:3px}
+    .grid.g6{grid-template-columns:repeat(5,minmax(0,34px))}
+    .wear-row .slot{width:34px;height:34px}
+    .armor-txt{font-size:10px}
+    .hint{display:none}
+    .game-title{font-size:min(44px,11vh)!important;letter-spacing:6px}
+    .tagline{margin:2px 0 10px;font-size:12px}
+    .menu{gap:5px}.menu button{width:220px;font-size:14px;padding:5px}
+    .studio-tag{bottom:4px;font-size:10px}
+    .title-box{padding:6px}
+    .create-box{padding:12px 14px}
+    .story-box #story-art{max-height:42vh;width:auto;margin:0 auto}
+    #story-text{min-height:60px;margin-top:8px;font-size:14px}
+    .logo-name{margin-top:8px}#logo-seal{width:min(160px,34vh)}
+  }
+  /* ---------- Death ---------- */
+  #dead{position:fixed;inset:0;z-index:120;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.8)}
+  #dead .create-box{text-align:center}
+  #dead p{color:var(--dim);margin:10px 0 20px}
+</style>
+</head>
+<body>
+<script>if(/AfterLightApp/.test(navigator.userAgent)) document.body.classList.add('apk');</script>
+
+<div id="screen-splash" class="front">
+  <div class="logo-wrap">
+    <img id="logo-seal" src="assets/logo-seal.png" alt="In Hoc Signo Ludimus seal">
+    <div class="logo-name">IN HOC SIGNO</div>
+    <div class="logo-sub">LUDIMUS</div>
+    <div class="logo-motto">neste sinal, jogamos</div>
+    <div class="presents">presents</div>
+  </div>
+</div>
+
+<div id="screen-title" class="front">
+  <canvas id="title-art"></canvas>
+  <div class="title-box">
+    <h1 class="game-title">OUTREMER</h1>
+    <div class="tagline">Aelória — a capital murada de Aurélia</div>
+    <div class="menu">
+      <button id="t-new">New Game</button>
+      <button id="t-saves">Saved Game</button>
+      <button id="t-options">Options</button>
+      <button id="t-credits">Credits</button>
+      <button id="t-fs">⛶ Fullscreen</button>
+    </div>
+  </div>
+  <div class="studio-tag">In Hoc Signo Ludimus · prototype v0.11</div>
+  <div id="front-saves" class="front-pop"><div class="create-box">
+    <h2>Saved Game</h2><p id="saves-info"></p>
+    <button class="start alt" id="btn-continue" style="display:none">Continue</button>
+    <button class="linkbtn" id="btn-import-title">Import a save file…</button>
+    <button class="linkbtn" id="saves-close">Close</button>
+  </div></div>
+  <div id="front-options" class="front-pop"><div class="create-box">
+    <h2>Options</h2>
+    <label class="opt"><input type="checkbox" id="o-shake"> Screen shake</label>
+    <label class="opt"><input type="checkbox" id="o-blood"> Blood effects</label>
+    <label class="opt">Day length <select id="o-day"><option value="normal">Normal (8 min)</option><option value="long">Long (16 min)</option></select></label>
+    <div class="controls-help">Keyboard & mouse: WASD move · Shift run · E use / talk / drive · hold RIGHT mouse to aim, LEFT to attack · I bag · B build · C craft · M map · H mark home · Esc menu<br>Touch: drag on the left to move · USE · ATTACK · RUN · on-screen buttons</div>
+    <button class="linkbtn" id="options-close">Close</button>
+  </div></div>
+  <div id="front-credits" class="front-pop"><div class="create-box credits">
+    <img src="assets/logo-seal.png" alt="" style="width:96px;display:block;margin:0 auto 10px;filter:drop-shadow(0 0 12px rgba(255,140,80,.35))">
+    <h2>Credits</h2>
+    <p><b>AFTER LIGHT</b><br>an In Hoc Signo Ludimus game<br><i style="font-family:'Cormorant Garamond',serif;color:#9a8e7c">neste sinal, jogamos</i></p>
+    <p>Created by<br><b>Rodrigo Torquato Mazzoli</b></p>
+    <p>Prototype programming and pixel art generated with Claude (Anthropic)</p>
+    <p>Fonts: Pixelify Sans (Google Fonts)</p>
+    <button class="linkbtn" id="credits-close">Close</button>
+  </div></div>
+</div>
+
+<div id="screen-story" class="front">
+  <div class="story-box">
+    <canvas id="story-art" width="320" height="150"></canvas>
+    <div id="story-text"></div>
+    <div class="story-nav"><span id="story-step"></span><button class="linkbtn" id="story-skip">Skip</button><button class="start" id="story-next">Next ▸</button></div>
+  </div>
+</div>
+
+<div id="screen-create" style="display:none">
+  <div class="create-box">
+    <h1>OUTREMER</h1>
+    <div class="subtitle">Aelória — a capital murada de Aurélia</div>
+    <label>Character Name</label>
+    <input type="text" id="char-name" maxlength="20" value="Alex">
+    <label>Character</label>
+    <div class="look-row">
+      <button class="seg" id="sex-m">Male</button><button class="seg" id="sex-f">Female</button>
+      <button class="seg rand" id="btn-rand">🎲 Randomize</button>
+    </div>
+    <div class="look-box"><canvas id="preview" width="96" height="38"></canvas><div id="look-desc"></div></div>
+    <label>Choose up to 2 Professions</label>
+    <div class="selected-count" id="selected-count">0 / 2 selected</div>
+    <div class="professions" id="professions"></div>
+    <button class="start" id="btn-start" disabled>Start Surviving</button>
+    <button class="linkbtn" id="create-back">◂ Back to the title screen</button>
+    <div class="controls-help" id="controls-help">
+      WASD — move &nbsp;·&nbsp; Shift — run &nbsp;·&nbsp; E — open / search<br>
+      Hold RIGHT mouse — aim &nbsp;·&nbsp; LEFT click — attack (hold to keep attacking)<br>
+      1–0 — use item · I — bag · B — build (Q switches category) · C — craft · M — map · H — mark home · Esc — menu / save<br>
+      E next to a vehicle — drive / trunk / fuel · in a vehicle: W/S throttle, A/D steer, E get out · E next to people — talk / trade / recruit
+    </div>
+  </div>
+</div>
+
+<div id="hud">
+  <div id="stats" class="panel">
+    <div id="who">Alex<small>—</small></div>
+    <div class="stats-row"><div class="stats-bars">
+    <div class="stat">HEALTH<div class="bar"><div id="bar-health"></div></div></div>
+    <div class="stat">THIRST<div class="bar"><div id="bar-thirst"></div></div></div>
+    <div class="stat">HUNGER<div class="bar"><div id="bar-hunger"></div></div></div>
+    <div class="stat">STAMINA<div class="bar"><div id="bar-stamina"></div></div></div>
+    </div><canvas id="mini-body" width="64" height="92" title="Body — open the bag (I) for details"></canvas></div>
+    <div id="conds"></div>
+    <div id="weap">—</div>
+  </div>
+  <div id="clock" class="panel">
+    <span id="clock-day">Day 1</span> · <span id="clock-time">17:00</span>
+    <small id="clock-period">Evening</small>
+    <small id="clock-place">—</small>
+    <div class="hudbtns"><button id="btn-map">MAP</button><button id="btn-bag">BAG</button><button id="btn-build">BUILD</button><button id="btn-craft">CRAFT</button><button id="btn-menu">MENU</button><button id="btn-skip">+3h</button><button id="btn-fs" title="Fullscreen">⛶</button></div>
+  </div>
+  <div id="toasts"></div>
+  <div id="build-info"></div>
+  <div id="hotbar" class="panel"></div>
+  <div id="touch">
+    <div id="joy"><div id="knob"></div></div>
+    <div id="joy-hint">drag here to move</div>
+    <div class="tbtn" id="btn-atk">ATTACK</div>
+    <div class="tbtn" id="btn-use">USE</div>
+    <div class="tbtn" id="btn-run">RUN</div>
+  </div>
+</div>
+
+<div id="dead">
+  <div class="create-box">
+    <h1>YOU DIDN'T MAKE IT</h1>
+    <p id="dead-text"></p>
+    <button class="start" id="btn-again">Try again</button>
+  </div>
+</div>
+
+<canvas id="game"></canvas>
+<canvas id="worldmap"></canvas>
+<div id="map-ui"><span>WORLD MAP</span><button id="map-zoom">Zoom: world</button><button id="map-home">Mark home here (H)</button><button id="map-close">Close (M)</button><span class="legend">Tap the map to drop / remove a marker</span>
+  <span class="legend"><i style="background:#6ad06a"></i>Home/community <i style="background:#e04a3a"></i>Raider camp <i style="background:#e8c050"></i>Trader <i style="background:#f0e6d6"></i>City <i style="background:#cfc4b4"></i>Town <i style="background:#e8c070"></i>Gated community <i style="background:#ff4a3a;border-radius:50%"></i>You</span></div>
+<div id="hurt"></div>
+<div id="fade"></div>
+<input type="file" id="import-file" accept=".json,application/json" style="display:none">
+
+<div id="inv-panel" class="gpanel"><div class="gbox wide">
+  <div class="ghead"><b>SURVIVOR</b><span class="tabs"><button class="tab on">Inventory</button><button class="tab" id="inv-to-craft">Crafting (C)</button></span><button id="inv-close">Close (I)</button></div>
+  <div class="inv-cols">
+    <div class="icol body-col">
+      <div class="glabel">CONDITION</div>
+      <canvas id="body-cv" width="128" height="184"></canvas>
+      <div class="hint">Tap a body part to treat it</div>
+      <div id="body-vitals"></div>
+    </div>
+    <div class="icol main-col">
+      <div class="glabel">WEARING</div><div class="wear-row" id="inv-wear"></div>
+      <div class="glabel">HOTBAR <small>keys 1–0</small></div><div class="grid" id="inv-hot"></div>
+      <div class="glabel">BACKPACK</div><div class="grid" id="inv-bag"></div>
+      <div id="inv-detail"><div id="inv-icon"></div><div><div id="inv-info"></div><div id="inv-acts"></div></div></div>
+    </div>
+    <div class="icol store-col" id="inv-store-wrap"><div class="glabel" id="inv-store-title">STORAGE</div><div class="grid g6" id="inv-store"></div><div id="inv-store-acts"></div></div>
+  </div>
+</div></div>
+<div id="trade-panel" class="gpanel"><div class="gbox wide">
+  <div class="ghead"><b id="trade-title">TRADING</b><span id="trade-cash"></span><button id="trade-close">Close</button></div>
+  <div class="inv-cols"><div class="icol main-col"><div class="glabel">THEIR GOODS</div><div id="trade-buy" class="tlist"></div></div>
+  <div class="icol main-col"><div class="glabel">YOUR ITEMS</div><div id="trade-sell" class="tlist"></div></div></div>
+</div></div>
+<div id="act-panel" class="gpanel"><div class="gbox narrow"><div class="ghead"><b id="act-title">—</b><button id="act-close">✕</button></div><div id="act-list"></div></div></div>
+
+<div id="craft-panel" class="gpanel"><div class="gbox">
+  <div class="ghead"><b>CRAFTING</b><button id="craft-close">Close (C)</button></div>
+  <div class="tabs ctabs" id="craft-tabs"></div>
+  <div id="craft-list"></div>
+</div></div>
+
+<div id="menu-panel" class="gpanel"><div class="gbox narrow">
+  <div class="ghead"><b>PAUSED</b></div>
+  <button class="mbtn" id="m-resume">Resume</button>
+  <button class="mbtn" id="m-save">Save game (F5)</button>
+  <button class="mbtn" id="m-load">Load last save</button>
+  <button class="mbtn" id="m-export">Export save file</button>
+  <button class="mbtn" id="m-import">Import save file</button>
+  <button class="mbtn" id="m-home">Mark this place as home (H)</button>
+  <button class="mbtn" id="m-skip">Skip 3 hours (testing)</button>
+  <button class="mbtn" id="m-quit">Quit to title</button>
+  <div id="save-status">Not saved yet this session.</div>
+  <div id="export-box" style="display:none"><textarea id="export-text" readonly></textarea><button class="mbtn" id="export-copy">Copy save text</button></div>
+</div></div>
+
+<script src="js/world.js"></script>
+<script src="js/vehicles.js"></script>
+<script src="js/decor.js"></script>
+<script src="js/survival.js"></script>
+<script src="js/npc.js"></script>
+<script src="js/game.js"></script>
+<script src="js/intro.js"></script>
+</body>
+</html>
