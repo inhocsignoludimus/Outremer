@@ -298,6 +298,12 @@ body.apk #btn-fs, body.apk #t-fs{display:none!important}</style>
   #dead{position:fixed;inset:0;z-index:120;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.8)}
   #dead .create-box{text-align:center}
   #dead p{color:var(--dim);margin:10px 0 20px}
+  /* Outremer: o título é desenhado na arte (letras góticas em pixel); menu embaixo, em linha */
+  #screen-title .game-title{display:none}
+  #screen-title .tagline{display:none}
+  #screen-title .title-box{position:absolute!important;left:50%!important;top:auto!important;bottom:3vh!important;transform:translateX(-50%)!important;width:min(860px,96vw)!important;background:none!important;border:0!important;box-shadow:none!important;padding:0!important}
+  #screen-title .menu{display:flex!important;flex-direction:row!important;flex-wrap:wrap;gap:8px;justify-content:center}
+  #screen-title .menu button{width:auto!important;min-width:118px;padding:8px 12px!important;margin:0!important;background:rgba(20,10,8,.82)!important;border-color:#6a3a1a!important}
 </style>
 </head>
 <body>
@@ -309,7 +315,7 @@ body.apk #btn-fs, body.apk #t-fs{display:none!important}</style>
     <div class="logo-name">IN HOC SIGNO</div>
     <div class="logo-sub">LUDIMUS</div>
     <div class="logo-motto">neste sinal, jogamos</div>
-    <div class="presents">presents</div>
+    <div class="presents">apresenta</div>
   </div>
 </div>
 
@@ -319,11 +325,11 @@ body.apk #btn-fs, body.apk #t-fs{display:none!important}</style>
     <h1 class="game-title">OUTREMER</h1>
     <div class="tagline">Aelória — a capital murada de Aurélia</div>
     <div class="menu">
-      <button id="t-new">New Game</button>
-      <button id="t-saves">Saved Game</button>
-      <button id="t-options">Options</button>
-      <button id="t-credits">Credits</button>
-      <button id="t-fs">⛶ Fullscreen</button>
+      <button id="t-new">Novo jogo</button>
+      <button id="t-saves">Continuar</button>
+      <button id="t-options">Opções</button>
+      <button id="t-credits">Créditos</button>
+      <button id="t-fs">⛶ Tela cheia</button>
     </div>
   </div>
   <div class="studio-tag">In Hoc Signo Ludimus · prototype v0.11</div>
@@ -356,7 +362,7 @@ body.apk #btn-fs, body.apk #t-fs{display:none!important}</style>
   <div class="story-box">
     <canvas id="story-art" width="320" height="150"></canvas>
     <div id="story-text"></div>
-    <div class="story-nav"><span id="story-step"></span><button class="linkbtn" id="story-skip">Skip</button><button class="start" id="story-next">Next ▸</button></div>
+    <div class="story-nav"><span id="story-step"></span><button class="linkbtn" id="story-skip">Pular</button><button class="start" id="story-next">Seguir ▸</button></div>
   </div>
 </div>
 
@@ -364,18 +370,18 @@ body.apk #btn-fs, body.apk #t-fs{display:none!important}</style>
   <div class="create-box">
     <h1>OUTREMER</h1>
     <div class="subtitle">Aelória — a capital murada de Aurélia</div>
-    <label>Character Name</label>
-    <input type="text" id="char-name" maxlength="20" value="Alex">
-    <label>Character</label>
+    <label>Nome</label>
+    <input type="text" id="char-name" maxlength="20" value="Aldric">
+    <label>Aparência</label>
     <div class="look-row">
-      <button class="seg" id="sex-m">Male</button><button class="seg" id="sex-f">Female</button>
-      <button class="seg rand" id="btn-rand">🎲 Randomize</button>
+      <button class="seg" id="sex-m">Homem</button><button class="seg" id="sex-f">Mulher</button>
+      <button class="seg rand" id="btn-rand">🎲 Sortear</button>
     </div>
     <div class="look-box"><canvas id="preview" width="96" height="38"></canvas><div id="look-desc"></div></div>
-    <label>Choose up to 2 Professions</label>
-    <div class="selected-count" id="selected-count">0 / 2 selected</div>
+    <label>Escolha seu ofício</label>
+    <div class="selected-count" id="selected-count">0 / 1</div>
     <div class="professions" id="professions"></div>
-    <button class="start" id="btn-start" disabled>Start Surviving</button>
+    <button class="start" id="btn-start" disabled>Entrar em Aurélia</button>
     <button class="linkbtn" id="create-back">◂ Back to the title screen</button>
     <div class="controls-help" id="controls-help">
       WASD — move &nbsp;·&nbsp; Shift — run &nbsp;·&nbsp; E — open / search<br>
@@ -483,6 +489,7 @@ body.apk #btn-fs, body.apk #t-fs{display:none!important}</style>
 <script src="js/survival.js"></script>
 <script src="js/npc.js"></script>
 <script src="js/game.js"></script>
+<script src="js/outremer.js"></script>
 <script src="js/intro.js"></script>
 </body>
 </html>
