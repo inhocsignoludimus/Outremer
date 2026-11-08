@@ -33,15 +33,16 @@ function placePeople(){
   const streets=[]; for(let y=1;y<H-1;y+=2) for(let x=1;x<W-1;x+=2){ const i=idx(x,y); if((map[i]===TL.ASPH)&&regionId[i]!==255&&!objGrid[i]) streets.push([x,y]); }
   const guardLook=()=>{ const l=randomLookR('m',rr); l.jacket='#6a6e74'; l.jacketD='#4a4e54'; l.pants='#3a3e44'; l.tabard='#7a1a14'; return l; };
   // vendedor de cada loja, perto do balcão
+  const byB=new Map(); for(const o of objs) if(o.b!==undefined){ if(!byB.has(o.b)) byB.set(o.b,[]); byB.get(o.b).push(o); }
   for(const b of buildings){ if(!b) continue;
     const vend = {forge:'ferreiro', tavern:'estalajadeiro', bank:'banqueiro', mage:'mago', shop:b.kind}[b.t]; if(!vend) continue;
     const cells=[]; for(let y=b.y+1;y<b.y+b.h-1;y++) for(let x=b.x+1;x<b.x+b.w-1;x++) if(freeWalk(x,y)) cells.push([x,y]);
-    cells.sort((p,q)=>{ const near=c=>Math.min(...objs.filter(o=>o.b===b.id&&o.type==='counter').map(o=>Math.hypot(o.x-c[0],o.y-c[1])).concat([9])); return near(p)-near(q); });
+    const ctrs=(byB.get(b.id)||[]).filter(o=>o.type==='counter'); const near=c=>Math.min(...ctrs.map(o=>Math.hypot(o.x-c[0],o.y-c[1])).concat([9])); cells.sort((p,q)=>near(p)-near(q));
     const c=cells.find(c=>!doorAdj(c[0],c[1])) || cells[0]; if(!c) continue;
     mk('trader',c[0],c[1],{home:b.id, vendor:vend, shop:b.name, weapon:null}); }
   // lorde e guarda real no castelo
   for(const b of buildings){ if(!b||b.t!=='castle') continue;
-    const th_=objs.find(o=>o.b===b.id&&o.type==='throne');
+    const th_=(byB.get(b.id)||[]).find(o=>o.type==='throne');
     if(th_){ const l=randomLookR('m',rr); l.jacket='#7a1a14'; l.jacketD='#5a1010'; l.crown=true; l.beard=true; l.hair='#d8d0c0';
       mk('lord',th_.x,th_.y+1,{name:'Lorde Aurélio',look:l,weapon:null}); }
     for(const dx of [-2,2]) if(th_) mk('guard',th_.x+dx,th_.y+2,{look:guardLook(),weapon:'spear',post:true});

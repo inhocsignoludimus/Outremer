@@ -275,7 +275,8 @@ function scaledWorld(D){
     fences: D.fences.map(thin), walls: D.walls.map(thin), pools: D.pools.map(R),
     props: D.props.map(p=>({...p, x:p.x*s, y:p.y*s})),
     cars: D.cars.map(c=>({...c, x:c.x*s, y:c.y*s})),
-    boats: (D.boats||[]).map(b=>({...b, x:b.x*s, y:b.y*s})) };
+    boats: (D.boats||[]).map(b=>({...b, x:b.x*s, y:b.y*s})),
+    cells:D.cells, cs:D.cs, rivers:D.rivers||[], paths:D.paths||[], portals:D.portals||[], lairs:D.lairs||[] };
 }
 let SW=null;
 function buildWorld(){
@@ -293,6 +294,7 @@ function buildWorld(){
       const d=((x-e.x)/e.rx)**2+((y-e.y)/e.ry)**2; if(d < 1 - th(x,y,5)*0.12) fn(idx(x,y),x,y); } };
   // sea outside the coastline (scanline fill of the authored polygon)
   fden=new Uint8Array(N);
+  if(WD.cells && typeof paintBiomes==='function') paintBiomes(WD);
   if(WD.coast){ const P=WD.coast; map.fill(TL.SEA);
     for(let y=0;y<H;y++){ const xs=[]; const yc=y+0.5;
       for(let a=0,b=P.length-1;a<P.length;b=a++){ const [x1,y1]=P[a],[x2,y2]=P[b]; if((y1>yc)!==(y2>yc)) xs.push(x1+(yc-y1)*(x2-x1)/(y2-y1)); }
@@ -305,6 +307,7 @@ function buildWorld(){
   for(let s=0;s<rv.pts.length-1;s++){ const [x1,y1]=rv.pts[s], [x2,y2]=rv.pts[s+1], L=Math.hypot(x2-x1,y2-y1);
     for(let t=0;t<=L;t+=1){ const cx=x1+(x2-x1)*t/L, cy=y1+(y2-y1)*t/L, r=rr+Math.sin((cx+cy)*0.05)*1.5;
       for(let y=Math.floor(cy-r);y<=cy+r;y++) for(let x=Math.floor(cx-r);x<=cx+r;x++) if(inB(x,y) && Math.hypot(x-cx,y-cy)<=r) map[idx(x,y)]=TL.WATER; } }
+  if(WD.cells && typeof paintWater==='function') paintWater(WD);
   // beaches: land within 2 tiles of the sea
   if(WD.coast){ const dist=new Uint8Array(N); let q=[];
     for(let y=1;y<H-1;y++) for(let x=1;x<W-1;x++){ const i=idx(x,y); if(map[i]!==TL.SEA) continue;
@@ -354,7 +357,8 @@ function buildWorld(){
     else if(p.t==='trash') addObj({type:'trash',x:p.x,y:p.y,solid:true,container:'trash'});
     else if(p.t==='crate') addObj({type:'crate',x:p.x,y:p.y,solid:true,container:'crate'});
     else if(p.t==='pump') addObj({type:'pump',x:p.x,y:p.y,solid:true});
-    else if(['anvil','logs','keg','hay','statue','banner'].includes(p.t)) addObj({type:p.t,x:p.x,y:p.y,solid:true});
+    else if(['anvil','logs','keg','hay','statue','banner','pine','palm','rock','deadtree','cactus'].includes(p.t)) addObj({type:p.t,x:p.x,y:p.y,solid:true,v:Math.floor(th(p.x,p.y,3)*3)});
+    else if(p.t==='moongate'){ if(areaFree(p.x,p.y,2,1)) addObj({type:'moongate',x:p.x,y:p.y,w:2,solid:true,portal:p.portal}); }
     else if(p.t==='fountain'){ if(areaFree(p.x,p.y,2,2)) addObj({type:'fountain',x:p.x,y:p.y,w:2,h:2,solid:true}); }
     else if(p.t==='container') addObj({type:'shipping',x:p.x,y:p.y,w:2,solid:true,container:'warehouse',c:p.c});
   }
@@ -1199,7 +1203,7 @@ let minimap;
 function buildMinimap(){
   minimap=document.createElement('canvas'); minimap.width=W; minimap.height=H;
   const g=minimap.getContext('2d'), img=g.createImageData(W,H), d=img.data;
-  const COL={18:[96,90,50],15:[27,46,66],16:[138,122,86],17:[94,70,48],0:[58,69,41],1:[90,74,51],2:[48,50,53],3:[85,87,90],7:[42,66,86],8:[93,94,90],11:[34,46,28],13:[90,74,53],14:[67,85,50],6:[140,138,132]};
+  const COL={19:[200,206,214],20:[70,66,62],21:[52,58,40],22:[168,140,92],23:[96,90,82],24:[150,180,200],18:[96,90,50],15:[27,46,66],16:[138,122,86],17:[94,70,48],0:[58,69,41],1:[90,74,51],2:[48,50,53],3:[85,87,90],7:[42,66,86],8:[93,94,90],11:[34,46,28],13:[90,74,53],14:[67,85,50],6:[140,138,132]};
   const hex=h=>{const n=parseInt(h.slice(1),16);return[n>>16,(n>>8)&255,n&255];};
   const roofC=buildings.map(b=>b?hex(b.roof):[100,100,100]);
   for(let i=0;i<N;i++){ let c;
@@ -2756,7 +2760,7 @@ function updateHud(dt){
   let per='Noite'; if(time>=5&&time<11) per='Manhã'; else if(time>=11&&time<17) per='Tarde'; else if(time>=17&&time<21) per='Entardecer';
   document.getElementById('clock-period').textContent=per;
   const reg=regionAt(player.x,player.y), b = player.inB>=0 ? buildings[player.inB] : null;
-  document.getElementById('clock-place').textContent = (reg ? reg.name : 'Wilderness') + (b ? ' · '+buildingName(b) : '');
+  document.getElementById('clock-place').textContent = (reg ? reg.name : (typeof wildName==='function'?wildName():'Ermo')) + (b ? ' · '+buildingName(b) : '');
   document.getElementById('btn-run').classList.toggle('on', runHeld && !player.exhausted);
   document.getElementById('btn-atk').classList.toggle('on', attackHeld);
   const Wp=WEAPONS[player.weapon];
@@ -2881,7 +2885,7 @@ document.getElementById('btn-map').addEventListener('pointerdown',e=>{ e.stopPro
 mapCv.addEventListener('pointerdown',e=>{ e.stopPropagation(); mapClick(e); });
 document.getElementById('map-home').addEventListener('pointerdown',e=>{ e.stopPropagation(); setHome(); });
 document.getElementById('map-close').addEventListener('pointerdown',e=>{ e.stopPropagation(); toggleMap(false); });
-document.getElementById('map-zoom').addEventListener('pointerdown',e=>{ e.stopPropagation(); mapZoom=(mapZoom+1)%3; document.getElementById('map-zoom').textContent=['Zoom: world','Zoom: area','Zoom: close'][mapZoom]; });
+document.getElementById('map-zoom').addEventListener('pointerdown',e=>{ e.stopPropagation(); mapZoom=(mapZoom+1)%3; document.getElementById('map-zoom').textContent=['Zoom: mundo','Zoom: região','Zoom: perto'][mapZoom]; });
 document.getElementById('btn-start').onclick=startGame;
 document.getElementById('btn-again').onclick=()=>{
   document.getElementById('dead').style.display='none'; document.getElementById('hud').style.display='none';
