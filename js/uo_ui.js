@@ -110,7 +110,7 @@ function toggleWar(){ warMode=!warMode; const b=document.querySelector('#uo-doll
   document.getElementById('uo-war').textContent = warMode?'⚔ MODO GUERRA':''; const wb=document.getElementById('uo-wbtn'); wb.textContent=warMode?'GUERRA':'PAZ'; wb.classList.toggle('peace',!warMode); toast(warMode?'Modo Guerra: o clique ataca.':'Modo Paz: o clique não ataca.'); }
 addEventListener('keydown',e=>{ if(e.key==='Tab' && running && document.activeElement.tagName!=='INPUT'){ e.preventDefault(); toggleWar(); } });
 // no modo Paz o clique não ataca (como no UO)
-const _paW = playerAttack; playerAttack = function(a){ if(!warMode && uiMode!=='classic' && leftHeld && !attackHeld) return; _paW(a); };
+const _paW = playerAttack; playerAttack = function(a){ if(!warMode && leftHeld && !attackHeld && !d2.target) return; _paW(a); };
 // tela do jogo dentro da moldura
 const _resizeU = resize;
 resize = function(){
@@ -159,16 +159,70 @@ update = function(dt){ _updUO(dt); if(uiMode==='classic'||!running||!player) ret
 // janelas abrem dentro da área do jogo
 const _enterUO = enterGame; enterGame = function(msg){ _enterUO(msg); applyUI(); };
 
-// andar com o mouse, como no UO: segure o botão direito (ou o esquerdo no modo Paz) e o boneco vai na direção do cursor; longe do boneco ele corre
-let rmb=false;
-canvas.addEventListener('mousedown',e=>{ if(e.button===2) rmb=true; });
-addEventListener('mouseup',e=>{ if(e.button===2){ rmb=false; runHeld=false; } if(e.button===0 && !warMode) runHeld=false; });
-addEventListener('blur',()=>{ rmb=false; });
+// =====================================================================
+// CONTROLE ESTILO DIABLO 2 (hack and slash): clique no chão anda até lá (segurar continua andando
+// atrás do cursor), clique no monstro vai até ele e ataca, clique em gente/objeto vai e usa,
+// Shift+clique ataca parado, botão direito lança a magia/habilidade ligada (a última usada).
+// =====================================================================
+const d2={ target:null, dest:null, use:null, hover:null };
+function monsterAt(wx,wy){ let best=null, bd=1e9; for(const r of raiders){ const M=MONS[r.mon]||{}, sc=M.scale||1, d=Math.hypot(r.x-wx,(r.y-10*sc)-wy); if(d<12*sc+4 && d<bd){ bd=d; best=r; } } return best; }
+function npcAt(wx,wy){ for(const n of npcs){ if(n.dead||!n.active) continue; if(Math.hypot(n.x-wx,(n.y-10)-wy)<10) return n; } for(const a of animals){ if(Math.hypot(a.x-wx,(a.y-6)-wy)<10) return {animal:a}; } return null; }
+function objAt(wx,wy){ const tx=Math.floor(wx/T), ty=Math.floor(wy/T); if(!inB(tx,ty)) return null; const i=idx(tx,ty), o=objGrid[i];
+  if(doors.get(i)) return {door:doors.get(i),x:tx,y:ty}; if(o && (o.container||ACT_TYPES.has(o.type))) return {o,x:tx,y:ty}; return null; }
+function d2Click(e){
+  if(!player||player.ghost&&false) return; const m=mouseWorld(); d2.use=null; d2.dest=null; d2.target=null;
+  if(keys.shift){ playerAttack(Math.atan2(m.y-(player.y-10),m.x-player.x)); return; }
+  const r=monsterAt(m.x,m.y); if(r && !player.ghost){ d2.target=r; return; }
+  const n=npcAt(m.x,m.y); if(n){ d2.use={kind:'npc',ref:n}; return; }
+  const o=objAt(m.x,m.y); if(o && Math.hypot(o.x*T+8-player.x,o.y*T+8-player.y)<14*T){ d2.use={kind:'obj',ref:o}; return; }
+  d2.dest={x:m.x,y:m.y+8};
+}
+function faceTo(x,y){ const a=Math.atan2(y-(player.y-10),x-player.x); player.aimAng=a; player.face=faceFromAng(a); return a; }
+let d2Move=null;
+function d2Tick(dt){
+  d2Move=null; if(!player||isTouch) return;
+  if(keys.w||keys.a||keys.s||keys.d||keys.arrowup||keys.arrowdown||keys.arrowleft||keys.arrowright){ d2.dest=null; d2.target=null; d2.use=null; return; }
+  const m=mouseWorld(); d2.hover=monsterAt(m.x,m.y);
+  if(leftHeld && !d2.target && !d2.use && !keys.shift){ const r=d2.hover; if(r && !player.ghost) d2.target=r; else d2.dest={x:m.x,y:m.y+8}; }
+  if(leftHeld && keys.shift && player.atkCd<=0) playerAttack(faceTo(m.x,m.y));
+  if(d2.target){ const r=d2.target; if(!raiders.includes(r)){ d2.target=null; return; }
+    const Wp=WEAPONS[player.weapon]||OW.fists, sc=(MONS[r.mon]||{}).scale||1, reach=Wp.ranged?Math.min(Wp.range*.85,11*T):(Wp.range||15)+6*sc, d=Math.hypot(r.x-player.x,r.y-player.y);
+    if(d>reach || (Wp.ranged && !los(player.x,player.y-10,r.x,r.y-10))) d2Move=[r.x,r.y];
+    else { const a=faceTo(r.x,r.y-9*sc); if(player.atkCd<=0) playerAttack(a); if(!leftHeld && Wp.ranged===undefined && Math.random()<0) d2.target=null; }
+    return; }
+  if(d2.use){ const u=d2.use, tx=u.kind==='npc'?(u.ref.animal||u.ref).x:u.ref.x*T+8, ty=u.kind==='npc'?(u.ref.animal||u.ref).y:u.ref.y*T+12, d=Math.hypot(tx-player.x,ty-player.y);
+    if(d>18){ d2Move=[tx,ty]; return; }
+    d2.use=null; faceTo(tx,ty-8);
+    if(u.kind==='npc'){ if(u.ref.animal){ interact(); } else talkTo(u.ref); }
+    else interact();
+    return; }
+  if(d2.dest){ const d=Math.hypot(d2.dest.x-player.x,d2.dest.y-player.y); if(d<5){ d2.dest=null; return; } d2Move=[d2.dest.x,d2.dest.y]; }
+}
 function mouseMoveVec(){
   if(!running||!player||isTouch) return null; aiming=false;
-  const peaceDrag = !warMode && leftHeld && uiMode!=='classic';
-  if(!rmb && !peaceDrag) return null;
-  const sx=uoRect.x+(player.x-viewX)*zoom/dpr, sy=uoRect.y+(player.y-10-viewY)*zoom/dpr, dx=mouse.x-sx, dy=mouse.y-sy, d=Math.hypot(dx,dy);
-  if(d<10) return null; runHeld = d>170; return [dx/d, dy/d];
+  if(!d2Move){ if(!keys.shift) runHeld=false; return null; }
+  const dx=d2Move[0]-player.x, dy=d2Move[1]-player.y, d=Math.hypot(dx,dy); if(d<2) return null;
+  runHeld = d>6*T || !!d2.target; return [dx/d, dy/d];
 }
-addEventListener('mousemove',e=>{ mouse.x=e.clientX; mouse.y=e.clientY; });
+// botão direito: a magia ou habilidade ligada (a última que você usou), na direção do cursor
+let rmb=false;
+canvas.addEventListener('mousedown',e=>{ if(e.button===2){ rmb=true; d2Right(); } });
+addEventListener('mouseup',e=>{ if(e.button===2) rmb=false; });
+addEventListener('blur',()=>{ rmb=false; });
+function d2Right(){ if(!running||!player) return; const m=mouseWorld(); const r=monsterAt(m.x,m.y); faceTo(r?r.x:m.x, r?r.y-9:m.y);
+  const rs=player.rightSkill; if(!rs){ toast('Botão direito: use uma magia ou habilidade da barra (1–0) uma vez para ligá-la aqui.'); return; }
+  if(rs.t==='sp') castSpell(rs.id); else useAbility(rs.id); }
+const _csD2 = castSpell; castSpell = function(id){ player.rightSkill={t:'sp',id}; return _csD2(id); };
+const _uaD2 = useAbility; useAbility = function(id){ player.rightSkill={t:'ab',id}; return _uaD2(id); };
+const _updD2 = update; update = function(dt){ _updD2(dt); if(rmb && running && player && (player.castCd||0)<=0 && player.rightSkill && player.rightSkill.t==='sp') d2Right(); };
+// spellTarget mira no monstro sob o cursor quando há um
+const _stD2 = spellTarget; spellTarget = function(range){ if(!isTouch && mouse.seen!==false){ const m=mouseWorld(), r=monsterAt(m.x,m.y); if(r && Math.hypot(r.x-player.x,r.y-player.y)<range) return r; } return _stD2(range); };
+// barra de vida do monstro sob o cursor, no topo (como no D2)
+const _dfxD2 = drawFX;
+drawFX = function(g,cx,cy){ _dfxD2(g,cx,cy); const r=d2.target&&raiders.includes(d2.target)?d2.target:d2.hover; if(!r||!raiders.includes(r)) return; const M=MONS[r.mon]||{name:'?'};
+  const bw=Math.min(140,buf.width*.4), x=Math.round(buf.width/2-bw/2), y=4; g.fillStyle='rgba(0,0,0,.6)'; g.fillRect(x-1,y-1,bw+2,11); g.fillStyle=M.boss?'#8a5a10':'#6a1a10'; g.fillRect(x,y,Math.round(bw*Math.max(0,r.hp/r.max)),9);
+  g.font='7px "Pixelify Sans",monospace'; g.textAlign='center'; g.fillStyle='#fff'; g.fillText(M.name,buf.width/2,y+7); g.textAlign='left';
+  const sx=Math.round(r.x-cx), sy=Math.round(r.y-cy), sc=M.scale||1; g.strokeStyle='rgba(255,220,120,.7)'; g.lineWidth=1; g.beginPath(); g.ellipse(sx,sy,7*sc,3*sc,0,0,7); g.stroke(); };
+// marcador de destino no chão
+const _dfxD2b = drawFX;
+drawFX = function(g,cx,cy){ _dfxD2b(g,cx,cy); if(d2.dest){ const x=Math.round(d2.dest.x-cx), y=Math.round(d2.dest.y-8-cy), t=(performance.now()/120)%6; g.strokeStyle='rgba(255,230,140,.8)'; g.beginPath(); g.ellipse(x,y,2+t,1+t/2,0,0,7); g.stroke(); } };

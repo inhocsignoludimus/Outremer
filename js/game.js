@@ -2076,6 +2076,7 @@ function update(dt){
   if(aiming && !buildMode){ const m=mouseWorld(); player.aimAng=Math.atan2(m.y-(player.y-10), m.x-player.x); player.face=faceFromAng(player.aimAng);
     if(leftHeld && player.atkCd<=0) playerAttack(player.aimAng); }
   if(attackHeld && player.atkCd<=0 && !buildMode) playerAttack(autoAimAngle());
+  else if(typeof d2Tick==='function'){ if(!buildMode) d2Tick(dt); }
   else if(leftHeld && !aiming && player.atkCd<=0 && !buildMode && !paused()) playerAttack(clickAngle());
   if(player.moving){
     if(search) search=null;
@@ -2817,7 +2818,7 @@ canvas.addEventListener('mousedown',e=>{
   if(e.button===2) aiming=true;
   else if(e.button===0){
     leftHeld=true;
-    playerAttack(clickAngle());
+    if(typeof d2Click==='function') d2Click(e); else playerAttack(clickAngle());
   }
 });
 addEventListener('mouseup',e=>{ if(e.button===2) aiming=false; if(e.button===0) leftHeld=false; });
