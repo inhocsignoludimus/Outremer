@@ -347,6 +347,7 @@ const DEF={
 
 };
 let curToS=null; function isRockSmall(o,bi){ isoRock(G,curToS,o.x,o.y,bi,false); }
+window.isoHasProp=t=>!!DEF[t];
 window.isoProp=function(g,toS,o,biome){ G=g; curToS=toS; P=(U,V,z)=>{ const [a,b]=toS(U,V); return [a,b-(z||0)]; };
   const f=DEF[o.type]||(o.type==='shelf'?DEF.shelf:null); if(!f) return false; const r=f(o,biome); return r||true; };
 })();
