@@ -83,7 +83,19 @@ function isoSize(){ const Wc=canvas.width, Hc=canvas.height; isoZ=Math.max(1,Mat
 const W2S=(wx,wy)=>[isoOX+(wx-wy)/T*TW/2, isoOY+(wx+wy)/T*TH/2];
 window.isoWorldToScreen=W2S;
 const SCL=2; // escala dos sprites 2D dos personagens
-function faceScreen(f){ return f; }
+// pose pela direção NA TELA (os sprites têm 4 poses: frente, costas, esquerda, direita)
+const faceMem=new WeakMap();
+function pickFace(sx,sy,prev){ const ax=Math.abs(sx), ay=Math.abs(sy)*2; if(ax>ay*1.12) return sx>0?'right':'left'; if(ay>ax*1.12) return sy>0?'down':'up'; return prev||(sy>0?'down':'up'); }
+const wv=(dx,dy)=>[dx-dy,(dx+dy)*.5];
+function screenFace(e,k){ let st=faceMem.get(e); if(!st){ st={x:e.x,y:e.y,f:null,t:0}; faceMem.set(e,st); }
+  const dx=e.x-st.x, dy=e.y-st.y; st.x=e.x; st.y=e.y;
+  if(k==='a'){ if(Math.abs(dx-dy)>.15) st.f=(dx-dy)>0?1:-1; return st.f||e.face; }
+  if(Math.hypot(dx,dy)>.25){ const [sx,sy]=wv(dx,dy); st.f=pickFace(sx,sy,st.f); st.t=0; return st.f; }
+  // parado: atacando/mirando olha para o alvo; senão mantém a última pose da tela
+  if(k==='p' && (player.swing||player.atkCd>0)){ const [sx,sy]=wv(Math.cos(player.aimAng),Math.sin(player.aimAng)); st.f=pickFace(sx,sy,st.f); return st.f; }
+  if(k==='r' && Math.hypot(player.x-e.x,player.y-e.y)<3*T){ const [sx,sy]=wv(player.x-e.x,player.y-e.y); st.f=pickFace(sx,sy,st.f); return st.f; }
+  if(!st.f){ const v={down:[0,1],up:[0,-1],left:[-1,0],right:[1,0]}[e.face]; if(v){ const [sx,sy]=wv(v[0],v[1]); st.f=pickFace(sx,sy,null); } }
+  return st.f||e.face; }
 function isoRenderFrame(now){
   const [bw,bh]=isoSize(), g=bctx; genBudget=floorCache.size<6?12:2;
   const px=player.x, py=player.y-6;
@@ -129,12 +141,13 @@ function isoRenderFrame(now){
       const [X,Y]=W2S((o.x+w/2)*T,(o.y+h)*T); g.save(); g.translate(Math.round(X-w*8*SCL),Math.round(Y-h*16*SCL)); g.scale(SCL,SCL); try{ drawObj(g,o,0,0,now); }catch(e){} g.restore(); }
     else { const e=it.e||player, [X,Y]=W2S(e.x,e.y);
       g.fillStyle='rgba(0,0,0,.3)'; g.beginPath(); g.ellipse(X+3,Y+1,12,5,0,0,7); g.fill();
+      const of=e.face; e.face=screenFace(e,it.k);
       g.save(); g.translate(Math.round(X),Math.round(Y)); g.scale(SCL,SCL);
       try{ if(it.k==='n') drawNPC(g,e,0,0); else if(it.k==='r') drawRaider(g,e,0,0); else if(it.k==='a') drawAnimal(g,e,0,0); else drawPlayer(g,0,-(player.onTower?26:0)); }catch(err){}
-      g.restore(); }
+      g.restore(); e.face=of; }
   }
   // herói atrás de árvore/parede: silhueta translúcida por cima (como no Diablo)
-  if(hid){ const [X,Y]=W2S(player.x,player.y); g.save(); g.globalAlpha=.55; g.translate(Math.round(X),Math.round(Y)); g.scale(SCL,SCL); try{ drawPlayer(g,0,0); }catch(e){} g.restore(); }
+  if(hid){ const [X,Y]=W2S(player.x,player.y); g.save(); g.globalAlpha=.55; g.translate(Math.round(X),Math.round(Y)); g.scale(SCL,SCL); const of=player.face, st=faceMem.get(player); if(st&&st.f) player.face=st.f; try{ drawPlayer(g,0,0); }catch(e){} player.face=of; g.restore(); }
   // efeitos no chão/ar com a mesma projeção (partículas, rastros, magias, fantasma da construção)
   g.save(); g.setTransform(TW/(2*T),TH/(2*T),-TW/(2*T),TH/(2*T),isoOX,isoOY);
   for(const p of particles){ g.fillStyle=p.col; g.fillRect(Math.round(p.x),Math.round(p.y-p.z*1.6),1.5,1.5); }
