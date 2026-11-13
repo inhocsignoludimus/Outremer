@@ -965,5 +965,8 @@
 "oeste": "west",
 "noroeste": "northwest",
 "norte": "north",
-"nordeste": "northeast"
+"nordeste": "northeast",
+"Câmera: Isométrica": "Camera: Isometric",
+"Câmera: Clássica": "Camera: Classic",
+"Câmera <select id=\"o-cam\"><option value=\"iso\">Isométrica (2.5D)</option><option value=\"classic\">Clássica (de cima)</option></select>": "Camera <select id=\"o-cam\"><option value=\"iso\">Isometric (2.5D)</option><option value=\"classic\">Classic (top-down)</option></select>"
 }

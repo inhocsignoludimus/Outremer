@@ -2063,6 +2063,7 @@ function update(dt){
   if(keys.w||keys.arrowup) iy-=1; if(keys.s||keys.arrowdown) iy+=1;
   if(keys.a||keys.arrowleft) ix-=1; if(keys.d||keys.arrowright) ix+=1;
   if(joy.active){ ix+=joy.x; iy+=joy.y; }
+  if(typeof isoOn==='function'&&isoOn()&&(ix||iy)){ const a=ix, b=iy; ix=(a+b)*.7071; iy=(b-a)*.7071; }
   if(typeof mouseMoveVec==='function'){ const mv=mouseMoveVec(); if(mv){ ix+=mv[0]; iy+=mv[1]; } }
   let len=Math.hypot(ix,iy); if(len>1){ ix/=len; iy/=len; len=1; }
   if(player.onTower){ ix=0; iy=0; len=0; }
