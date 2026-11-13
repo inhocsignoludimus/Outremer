@@ -5,6 +5,7 @@ const TW=48, TH=24, WH=46;
 const hsh=(a,b,c)=>{ let h=(a*374761393+b*668265263+(c|0)*2147483647)|0; h=Math.imul(h^(h>>>13),1274126177); return ((h^(h>>>16))>>>0)/4294967295; };
 function vnoise(x,y,s){ const xi=Math.floor(x), yi=Math.floor(y), fx=x-xi, fy=y-yi, u=fx*fx*(3-2*fx), v=fy*fy*(3-2*fy);
   const a=hsh(xi,yi,s), b=hsh(xi+1,yi,s), c=hsh(xi,yi+1,s), d=hsh(xi+1,yi+1,s); return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v; }
+const fbm=(x,y,s)=>(vnoise(x,y,s)*.5+vnoise(x*2.03,y*2.03,s+1)*.25+vnoise(x*4.1,y*4.1,s+2)*.15+vnoise(x*8.3,y*8.3,s+3)*.1);
 const hex=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
 const mix=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t];
 const mul=(c,k)=>[c[0]*k,c[1]*k,c[2]*k];
@@ -17,12 +18,14 @@ function floorCol(t,U,V,i,biome){
   const fu=U-Math.floor(U), fv=V-Math.floor(V);
   switch(t){
     case TL.GRASS: case TL.PARK: case TL.FOREST: case TL.FENCE: {
-      let c=biome==='o'?mix([150,130,80],[120,110,60],lo):biome==='n'?mix([92,110,84],[120,130,110],lo):mix([62,96,38],[92,118,44],lo);
-      if(t===TL.FOREST) c=mul(c,.82);
-      c=mul(c,.82+n*.32+mid*.12); const tuft=hsh(Math.floor(U*10),Math.floor(V*10),31); if(tuft>.8){ const fy=(V*10)%1, fx=(U*10)%1; if(Math.abs(fx-.5)<.08&&fy>.3) c=mul(c,1.25); }
-      if(n>.988) c=[220,200,110]; if(n<.008) c=[170,80,70]; return c; }
+      const f=fbm(U*.9,V*.9,3), f2=fbm(U*4,V*4,8), bl=vnoise(U*46+V*9,V*46-U*9,12), bl2=hsh(Math.floor(U*96),Math.floor(V*96),2);
+      let a=biome==='o'?[128,114,74]:biome==='n'?[96,104,88]:biome==='s'?[70,76,48]:[70,82,44], b=biome==='o'?[164,146,98]:biome==='n'?[136,142,124]:biome==='s'?[96,98,62]:[104,112,62];
+      let c=mix(a,b,f); c=mix(c,[96,84,58],Math.max(0,f2-.62)*1.6); // manchas de terra
+      if(t===TL.FOREST) c=mul(mix(c,[60,58,40],.25),.78);
+      c=mul(c,.78+bl*.32+bl2*.1); if(bl2>.992) c=[196,188,140]; if(bl2<.004) c=[120,72,60];
+      return c; }
     case TL.FIELD: { const r=(U*4)%1; let c=r<.5?mix([110,84,50],[96,70,42],n):mix([150,140,60],[120,128,52],n); return mul(c,.9+mid*.2); }
-    case TL.DIRT: case TL.ASPH: case TL.RUBBLE: { if(biome==='dg'){ let c=mix([70,62,56],[52,46,42],lo); c=mul(c,.8+n*.3); const S=2,ju=(U*S)%1,jv=(V*S)%1; if(Math.min(ju,jv)<.05&&mid>.45) c=[34,30,28]; if(hsh(Math.floor(U*12),Math.floor(V*12),19)>.95) c=[120,110,96]; return c; } if(t===TL.ASPH&&biome==='city') return floorCol(TL.WALK,U,V,i,biome); let c=mix([118,92,62],[96,74,50],lo); c=mul(c,.85+n*.28);
+    case TL.DIRT: case TL.ASPH: case TL.RUBBLE: { if(biome==='dg'){ let c=mix([70,62,56],[52,46,42],lo); c=mul(c,.8+n*.3); const S=2,ju=(U*S)%1,jv=(V*S)%1; if(Math.min(ju,jv)<.05&&mid>.45) c=[34,30,28]; if(hsh(Math.floor(U*12),Math.floor(V*12),19)>.95) c=[120,110,96]; return c; } if(t===TL.ASPH&&biome==='city') return floorCol(TL.WALK,U,V,i,biome); let c=mix([112,94,70],[88,74,56],fbm(U*1.2,V*1.2,4)); c=mul(c,.8+n*.22+vnoise(U*20,V*20,6)*.16);
       if(hsh(Math.floor(U*14),Math.floor(V*14),9)>.93) c=mix(c,[150,140,128],.6); if(t===TL.RUBBLE&&mid>.6) c=[110,104,98]; return c; }
     case TL.WALK: { // calçamento de pedra
       const S=3, cu=Math.floor(U*S), cv=Math.floor(V*S), ju=(U*S)%1, jv=(V*S)%1, off=(cv%2)*.5, ju2=(U*S+off)%1;
@@ -34,10 +37,10 @@ function floorCol(t,U,V,i,biome){
     case TL.CARPET: { const b=Math.min(fu,1-fu,fv,1-fv); let c=b<.12?[160,128,52]:mix([118,28,30],[92,20,24],n); if(b>.2&&((Math.floor(U*4)+Math.floor(V*4))%2)) c=mul(c,.9); return c; }
     case TL.KTILE: case TL.LINO: case TL.CONC: { const S=2, ju=(U*S)%1, jv=(V*S)%1, cell=hsh(Math.floor(U*S),Math.floor(V*S),17);
       let c=mix([150,140,122],[128,118,102],cell); c=mul(c,.9+n*.15); if(Math.min(ju,jv)<.04) c=[80,72,62]; return c; }
-    case TL.WATER: case TL.SEA: { const deep=t===TL.SEA?.75:1; let c=mix([28,58,110],[40,84,140],lo); c=mul(c,deep*(.9+n*.12));
-      const w=Math.sin(U*6+V*2+mid*6); if(w>.93) c=mix(c,[170,200,230],.6); return c; }
-    case TL.SAND: case TL.DUNE: { let c=mix([206,180,128],[184,156,104],lo); c=mul(c,.92+n*.14); if(Math.sin((U+V)*7+lo*5)>.9) c=mul(c,.88); return c; }
-    case TL.SNOW: { let c=mix([226,232,240],[200,210,222],lo); return mul(c,.95+n*.07); }
+    case TL.WATER: case TL.SEA: { const deep=t===TL.SEA?.75:1; let c=mix([22,44,62],[38,70,88],fbm(U*.6,V*.6,2)); c=mul(c,deep*(.92+n*.08));
+      const w=Math.sin(U*5+V*1.4+fbm(U*2,V*2,9)*7); if(w>.96) c=mix(c,[150,176,186],.45); else if(w>.9) c=mix(c,[90,120,132],.3); return c; }
+    case TL.SAND: case TL.DUNE: { let c=mix([196,172,126],[168,142,100],fbm(U*.8,V*.8,5)); c=mul(c,.9+n*.12); if(Math.sin((U+V)*7+lo*5)>.9) c=mul(c,.88); return c; }
+    case TL.SNOW: { let c=mix([228,232,236],[188,196,206],fbm(U*.8,V*.8,7)); return mul(c,.94+n*.06); }
     case TL.ICE: { let c=mix([170,210,230],[140,186,214],lo); if(hsh(Math.floor(U*9),Math.floor(V*9),3)>.95) c=[230,245,255]; return c; }
     case TL.SWAMP: { let c=mix([62,74,44],[48,58,40],lo); c=mul(c,.85+n*.25); if(mid>.68) c=mix([40,52,42],[30,40,36],n); return c; }
     case TL.ROCK: { let c=mix([96,92,88],[74,70,68],mid); c=mul(c,.8+n*.3); return c; }
@@ -55,6 +58,7 @@ function wallPix(M,s,h,face,win,Hh){ // s:0..1 ao longo, h: altura em px
   else { const bw=M.pat==='ashlar'?22:14, off=(row%2)*bw/2; if((h|0)%7===0||(((s*64+off)|0)%bw)===0) m=true;
     c=mul(c,.9+hsh(Math.floor((s*64+off)/bw),row,5)*.2); }
   if(m) c=line;
+  c=mul(c,(.78+Math.min(1,h/18)*.22)*(.88+vnoise(s*9,h*.06,77)*.22));
   if(win && s>.32&&s<.68 && h>Hh*.38 && h<Hh*.78){ const fr=s<.36||s>.64||h<Hh*.42||h>Hh*.74||Math.abs(s-.5)<.02; c=fr?[60,42,26]:mix([40,60,90],[90,120,160],(h-Hh*.38)/(Hh*.4)); }
   return mul(c,face);
 }
@@ -73,21 +77,37 @@ function drawWall(img,W8,H8,sx,sy,M,Hh,win,showL,showR,low){
 }
 // ---------- árvores detalhadas ----------
 function drawTree(g,X,Y,seed,biome){
-  const conifer=biome==='n'||biome==='m'||hsh(seed,1,1)<.35, autumn=hsh(seed,2,2);
-  g.fillStyle='rgba(0,0,0,.28)'; g.beginPath(); g.ellipse(X+6,Y,30,11,0,0,7); g.fill();
-  const img=g.getImageData(X-60,Y-150,120,156), d=img.data, put=(x,y,c)=>{ if(x<0||y<0||x>=120||y>=156) return; const k=(y*120+x)*4; d[k]=c[0]; d[k+1]=c[1]; d[k+2]=c[2]; d[k+3]=255; };
-  const ox=60, oy=150;
-  for(let y=-34;y<=0;y++) for(let x=-5;x<=5;x++) put(ox+x,oy+y, mul([86,60,38],.7+(x+5)/14+hsh(x,y,seed)*.15));
-  if(conifer){ const Hh=110+hsh(seed,3,3)*30;
-    for(let y=0;y<Hh;y++){ const t=y/Hh, w=(1-t)*34*(.85+.15*Math.sin(y*.5)); for(let x=-w;x<=w;x++){ const n=hsh(x|0,y,seed);
-      if(n<.12&&Math.abs(x)>w-3) continue; let c=mix([30,70,40],[52,104,58],(x+w)/(2*w+1)); c=mul(c,.75+n*.45-(y%9<2?.15:0)); put(ox+(x|0),oy-26-y,c); } } }
-  else { const pal=autumn<.35?[[150,60,20],[220,120,40]]:autumn<.55?[[160,110,30],[230,180,70]]:[[50,92,34],[110,150,60]];
-    const blobs=[]; for(let k=0;k<9;k++) blobs.push([(hsh(seed,k,4)-.5)*56,-60-hsh(seed,k,5)*60,18+hsh(seed,k,6)*14]);
-    for(let y=-130;y<-24;y++) for(let x=-50;x<50;x++){ let inside=0, sh=0;
-      for(const b of blobs){ const dd=((x-b[0])**2+(y-b[1])**2)/(b[2]*b[2]); if(dd<1){ inside=1; sh=Math.max(sh,1-dd+((b[0]-x)+(b[1]-y))/(b[2]*3)); } }
-      if(!inside) continue; const n=hsh(x>>1,y>>1,seed); if(n<.05) continue;
-      let c=mix(pal[0],pal[1],Math.min(1,Math.max(0,sh*.8+n*.35))); c=mul(c,.6+sh*.5); put(ox+x,oy+y,c); } }
-  g.putImageData(img,X-60,Y-150);
+  const conifer=biome==='n'||biome==='m'||hsh(seed,1,1)<.3, au=hsh(seed,2,2), snow=biome==='n';
+  const BW=150, BH=190, ox=75, oy=184;
+  const img=g.getImageData(X-ox,Y-oy,BW,BH), d=img.data, put=(x,y,c)=>{ x|=0; y|=0; if(x<0||y<0||x>=BW||y>=BH) return; const k=(y*BW+x)*4; d[k]=c[0]; d[k+1]=c[1]; d[k+2]=c[2]; d[k+3]=255; };
+  const L=[-.6,-.55,.58];
+  // tronco com casca
+  const th=conifer?30:44, tw=conifer?4:6;
+  for(let y=-th;y<=0;y++){ const w=tw+(y>-6?(6+y)*.5:0); for(let x=-w;x<=w;x++){ const sh=.45+.55*(1-(x+w)/(2*w+.01)); const bark=vnoise(x*.6,y*.15,seed)*.35;
+    put(ox+x,oy+y,mul([92,72,52],sh*(.75+bark))); } }
+  if(conifer){ const Hh=118+hsh(seed,3,3)*40, R=34+hsh(seed,4,4)*10;
+    for(let y=0;y<Hh;y++){ const t=y/Hh, tier=(y*0.11+hsh(seed,5,5)*3)%1, w=(1-t)*R*(.72+.28*tier);
+      for(let x=-w;x<=w;x++){ const xf=x/(w+.01), n=hsh(x|0,y,seed), nn=vnoise(x*.35,y*.35,seed);
+        if(Math.abs(xf)>.82&&n<.45) continue; if(nn<.18&&Math.abs(xf)>.5) continue;
+        const lit=Math.max(0,-xf*L[0]*0.9+(1-tier)*.5)*.6+.3;
+        let c=mix([22,36,26],[66,88,58],Math.min(1,lit*(.7+nn*.6))); if(tier<.18) c=mul(c,.62);
+        if(snow&&tier>.78&&n>.3) c=mix(c,[226,232,238],.85);
+        put(ox+x,oy-24-y,c); } } }
+  else { const pal=au<.3?[[86,44,20],[196,118,52]]:au<.48?[[96,74,28],[204,168,78]]:[[30,46,22],[112,132,60]];
+    const cx=(hsh(seed,7,7)-.5)*8, cy=-th-38-hsh(seed,8,8)*14, RX=40+hsh(seed,9,9)*14, RY=36+hsh(seed,10,10)*12, cl=[];
+    for(let k=0;k<46;k++){ const a=hsh(seed,k,11)*6.283, r=Math.sqrt(hsh(seed,k,12)); cl.push([cx+Math.cos(a)*r*RX*.85, cy+Math.sin(a)*r*RY*.8, 7+hsh(seed,k,13)*8]); }
+    cl.sort((p,q)=>p[1]-q[1]);
+    const zb=new Float32Array(BW*BH).fill(-1e9);
+    for(const [bx,by,br] of cl){ for(let y=-br;y<=br;y++) for(let x=-br;x<=br;x++){ const dd=(x*x+y*y)/(br*br); if(dd>1) continue;
+      const px=Math.round(bx+x), py=Math.round(by+y), z=by+Math.sqrt(1-dd)*br; const k=(oy+py)*BW+(ox+px); if(k<0||k>=zb.length||z<zb[k]) continue;
+      const nz=Math.sqrt(1-dd), nx=x/br, ny=y/br; const leaf=hsh(px>>1,py>>1,seed), lf=vnoise(px*.45,py*.45,seed+3);
+      if(dd>.6&&lf<.35) continue; zb[k]=z;
+      // luz: normal do cacho + posição na copa (borda de baixo e de trás mais escura)
+      let lit=Math.max(0,nx*L[0]+ny*L[1]+nz*L[2]); const occ=Math.min(1,Math.max(0,.55+(-(by-cy)/RY)*.35-(Math.hypot(bx-cx,by-cy)/RX<.4?.2:0)));
+      lit=lit*.7+occ*.45; let c=mix(pal[0],pal[1],Math.min(1,Math.max(0,lit*(.75+lf*.5))));
+      c=mul(c,.82+leaf*.3); if(leaf>.97) c=mix(c,[200,190,120],.4);
+      put(ox+px,oy+py,c); } } }
+  g.putImageData(img,X-ox,Y-oy);
 }
 const isPanel=t=>t===TL.WALL||t===TL.WINDOW;
 function underFloor(x,y){ const c=[map[(y)*W+x-1],map[(y)*W+x+1],map[(y-1)*W+x],map[(y+1)*W+x]];
@@ -115,7 +135,9 @@ window.isoRender=function(cxT,cyT,opts={}){
   // chão
   const img=g.createImageData(Wc,Hc), d=img.data;
   for(let Y=0;Y<Hc;Y++) for(let X=0;X<Wc;X++){ const a=(X-ox)/(TW/2), b=(Y-oy)/(TH/2), U=(a+b)/2, V=(b-a)/2, x=Math.floor(U), y=Math.floor(V);
-    let c=[0,0,0]; if(x>=0&&y>=0&&x<W&&y<H){ const i=y*W+x; let t=map[i]; if(t===TL.WALL||t===TL.WINDOW) t=underFloor(x,y); c=floorCol(t,U,V,i,biomeAt(x,y)); }
+    let c=[0,0,0]; if(x>=0&&y>=0&&x<W&&y<H){ let i=y*W+x; let t=map[i];
+      if(!INTERIOR.has(t)&&!isWall(t)&&t!==TL.WALK){ const ju=U+(vnoise(U*2.3,V*2.3,41)-.5)*.7, jv=V+(vnoise(U*2.3,V*2.3,43)-.5)*.7, xx=Math.floor(ju), yy=Math.floor(jv);
+        if(xx>=0&&yy>=0&&xx<W&&yy<H){ const t2=map[yy*W+xx]; if(!INTERIOR.has(t2)&&!isWall(t2)&&t2!==TL.WALK&&t2!==TL.BRIDGE&&t2!==TL.PIER){ t=t2; i=yy*W+xx; } } } if(t===TL.WALL||t===TL.WINDOW) t=underFloor(x,y); c=floorCol(t,U,V,i,biomeAt(x,y)); }
     const k=(Y*Wc+X)*4; d[k]=c[0]; d[k+1]=c[1]; d[k+2]=c[2]; d[k+3]=255; }
   // lista de coisas em pé
   const span=26, list=[];
@@ -134,6 +156,17 @@ window.isoRender=function(cxT,cyT,opts={}){
   // paredes primeiro na imagem de pixels (ordem de profundidade), depois o resto por cima com canvas
   list.sort((a,b)=>a.dep-b.dep);
   g.putImageData(img,0,0);
+  // sombras projetadas (sol alto à esquerda): desenhadas no chão antes de tudo, suavizadas
+  { const SH=document.createElement('canvas'); SH.width=Wc; SH.height=Hc; const s2=SH.getContext('2d'); s2.fillStyle='#000';
+    const sh=(sx,sy,rx,ry)=>{ s2.beginPath(); s2.ellipse(sx,sy,rx,ry,0,0,7); s2.fill(); };
+    const quad=(U0,V0,U1,V1,Hh)=>{ const a=toS(U0,V0), b=toS(U1,V1), dx=Hh*.62, dy=Hh*.2; s2.beginPath(); s2.moveTo(a[0],a[1]); s2.lineTo(b[0],b[1]); s2.lineTo(b[0]+dx,b[1]+dy); s2.lineTo(a[0]+dx,a[1]+dy); s2.closePath(); s2.fill(); };
+    for(const it of list){
+      if(it.k==='w'){ const i=it.y*W+it.x; if(map[i]===TL.ROCK){ const [x,y]=toS(it.x+.5,it.y+.5); sh(x+26,y+8,40,16); continue; }
+        const X=it.x+.5, Y=it.y+.5; if(isPanel(map[i+1])) quad(X,Y,X+.5,Y,WH); if(isPanel(map[i-1])) quad(X-.5,Y,X,Y,WH); if(isPanel(map[i+W])) quad(X,Y,X,Y+.5,WH); if(isPanel(map[i-W])) quad(X,Y-.5,X,Y,WH); }
+      else if(it.k==='o'){ const o=it.o, [x,y]=toS(o.x+(o.w||1)/2,o.y+(o.h||1)/2);
+        if(o.type==='tree'||o.type==='olive') sh(x+34,y+8,40,15); else if(o.type==='pine') sh(x+30,y+8,30,11); else if(o.type==='rug') continue; else sh(x+8,y+3,14*(o.w||1),6*(o.h||1)); }
+    }
+    g.save(); g.globalAlpha=.38; g.filter='blur(3px)'; g.drawImage(SH,0,0); g.restore(); }
   const SC=2.0;
   const sprite=(fn)=>{ g.save(); g.imageSmoothingEnabled=false; fn(); g.restore(); };
   let pend=null; const flush=()=>{ if(pend){ g.putImageData(pend,0,0); pend=null; } };
@@ -173,6 +206,14 @@ window.isoRender=function(cxT,cyT,opts={}){
     g.globalCompositeOperation='lighter';
     for(const [U,V,r] of (opts.lights||[])){ const [x,y]=toS(U,V); const gr=g.createRadialGradient(x,y-20,0,x,y-20,r*.6); gr.addColorStop(0,'rgba(255,140,50,.22)'); gr.addColorStop(1,'rgba(255,140,50,0)'); g.fillStyle=gr; g.fillRect(x-r,y-20-r,2*r,2*r); }
     g.globalCompositeOperation='source-over'; }
+  // tratamento de cor: menos saturação, contraste suave, tom quente e vinheta
+  if(opts.grade!==false){ const im=g.getImageData(0,0,Wc,Hc), q=im.data;
+    for(let y=0;y<Hc;y++) for(let x=0;x<Wc;x++){ const k=(y*Wc+x)*4; let r=q[k],gg=q[k+1],b=q[k+2]; const l=r*.3+gg*.59+b*.11;
+      r=l+(r-l)*.8; gg=l+(gg-l)*.8; b=l+(b-l)*.8;
+      r=(r-128)*1.06+128+5; gg=(gg-128)*1.06+128+1; b=(b-128)*1.06+128-6;
+      const vx=(x/Wc-.5), vy=(y/Hc-.5), v=1-Math.min(.32,(vx*vx+vy*vy)*.9);
+      q[k]=r*v; q[k+1]=gg*v; q[k+2]=b*v; }
+    g.putImageData(im,0,0); }
   return cv;
 };
 })();
