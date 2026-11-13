@@ -88,7 +88,7 @@ const ANIM_TYPES=new Set(['campfire','brazier','candle','hearth','moongate','fou
 // ---------- render ----------
 let isoZ=1, isoOX=0, isoOY=0, vig=null;
 function isoSize(){ const Wc=Math.round((parseFloat(canvas.style.width)||innerWidth)*dpr), Hc=Math.round((parseFloat(canvas.style.height)||innerHeight)*dpr);
-  isoZ=Math.max(1,Hc/(MOBILE?470:780)); if(!MOBILE) isoZ=Math.max(1,Math.round(isoZ)); const bw=Math.ceil(Wc/isoZ), bh=Math.ceil(Hc/isoZ);
+  isoZ=Math.max(1,Math.min(Wc,Hc)/(MOBILE?470:780)); if(!MOBILE) isoZ=Math.max(1,Math.round(isoZ)); const bw=Math.ceil(Wc/isoZ), bh=Math.ceil(Hc/isoZ);
   // no celular a tela do jogo fica do tamanho do buffer e o navegador amplia (bem mais leve que redesenhar em 2400 px)
   const cw=MOBILE?bw:Wc, chh=MOBILE?bh:Hc; if(canvas.width!==cw||canvas.height!==chh){ canvas.width=cw; canvas.height=chh; }
   if(buf.width!==bw||buf.height!==bh){ buf.width=bw; buf.height=bh; if(typeof lcv!=='undefined'){ lcv.width=bw; lcv.height=bh; } } return [bw,bh]; }
