@@ -89,6 +89,24 @@ function drawTree(g,X,Y,seed,biome){
       let c=mix(pal[0],pal[1],Math.min(1,Math.max(0,sh*.8+n*.35))); c=mul(c,.6+sh*.5); put(ox+x,oy+y,c); } }
   g.putImageData(img,X-60,Y-150);
 }
+const isPanel=t=>t===TL.WALL||t===TL.WINDOW;
+function underFloor(x,y){ const c=[map[(y)*W+x-1],map[(y)*W+x+1],map[(y-1)*W+x],map[(y+1)*W+x]];
+  for(const t of c) if(INTERIOR.has(t)) return t; for(const t of c) if(!isWall(t)&&t!==TL.WATER&&t!==TL.SEA) return t; return TL.DIRT; }
+// parede fina (estilo UO): painel ao longo do eixo U ou V, saindo do centro do ladrilho
+function drawPanel(im,Wc,Hc,toS,U0,V0,alongU,len,Hh,M,win,low){
+  const d=im.data, put=(x,y,c)=>{ x|=0; y|=0; if(x<0||y<0||x>=Wc||y>=Hc) return; const k=(y*Wc+x)*4; d[k]=c[0]; d[k+1]=c[1]; d[k+2]=c[2]; d[k+3]=255; };
+  const TK=.14, cols=Math.max(1,Math.round(len*TW/2));
+  const face=alongU?.66:.92;
+  for(const layer of [0,1]){ // 0: face de trás (espessura), 1: face da frente
+    const off=layer?TK/2:-TK/2;
+    for(let c=0;c<=cols;c++){ const t=c/cols, U=U0+(alongU?t*len:0)+(alongU?0:off), V=V0+(alongU?0:t*len)+(alongU?off:0);
+      const [sx,sy]=toS(U,V);
+      for(let h=0;h<Hh;h++){ let col=wallPix(M,(t*len+(alongU?U0:V0))%1,h,layer?face:face*.6,win&&layer,Hh); put(sx,sy-h,col); } } }
+  // tampo
+  const cap=low?mul(hex(M.face),.75):mul(hex(M.face),.55);
+  for(let c=0;c<=cols;c++){ const t=c/cols; for(let k=-2;k<=2;k++){ const f=k/2*TK/2;
+    const U=U0+(alongU?t*len:f), V=V0+(alongU?f:t*len); const [sx,sy]=toS(U,V); put(sx,sy-Hh,mul(cap,.9+hsh(c,k,3)*.2)); } }
+}
 window.isoRender=function(cxT,cyT,opts={}){
   const Wc=1280, Hc=720, cv=document.createElement('canvas'); cv.width=Wc; cv.height=Hc; const g=cv.getContext('2d'); g.imageSmoothingEnabled=false;
   const ox=Wc/2-(cxT-cyT)*TW/2, oy=Hc/2-(cxT+cyT)*TH/2+(opts.dy||60);
@@ -97,7 +115,7 @@ window.isoRender=function(cxT,cyT,opts={}){
   // chão
   const img=g.createImageData(Wc,Hc), d=img.data;
   for(let Y=0;Y<Hc;Y++) for(let X=0;X<Wc;X++){ const a=(X-ox)/(TW/2), b=(Y-oy)/(TH/2), U=(a+b)/2, V=(b-a)/2, x=Math.floor(U), y=Math.floor(V);
-    let c=[0,0,0]; if(x>=0&&y>=0&&x<W&&y<H){ const i=y*W+x; let t=map[i]; if(t===TL.WINDOW) t=TL.WALL; c=floorCol(t,U,V,i,biomeAt(x,y)); }
+    let c=[0,0,0]; if(x>=0&&y>=0&&x<W&&y<H){ const i=y*W+x; let t=map[i]; if(t===TL.WALL||t===TL.WINDOW) t=underFloor(x,y); c=floorCol(t,U,V,i,biomeAt(x,y)); }
     const k=(Y*Wc+X)*4; d[k]=c[0]; d[k+1]=c[1]; d[k+2]=c[2]; d[k+3]=255; }
   // lista de coisas em pé
   const span=26, list=[];
@@ -120,12 +138,23 @@ window.isoRender=function(cxT,cyT,opts={}){
   const sprite=(fn)=>{ g.save(); g.imageSmoothingEnabled=false; fn(); g.restore(); };
   let pend=null; const flush=()=>{ if(pend){ g.putImageData(pend,0,0); pend=null; } };
   for(const it of list){
-    if(it.k==='w'){ const i=it.y*W+it.x, M=map[i]===TL.ROCK?ROCKM:(MATS[mat[i]]||MATS[6]);
-      const nl=map[i+W], nr=map[i+1], back1=map[i-1], back2=map[i-W];
+    if(it.k==='w'){ const i=it.y*W+it.x, t0=map[i];
+      const back1=map[i-1], back2=map[i-W], nl=map[i+W], nr=map[i+1];
+      if(t0===TL.ROCK){ const M=ROCKM; const [sx,sy]=toS(it.x,it.y); if(sx<-80||sx>Wc+80||sy<-120||sy>Hc+80) continue;
+        const im=g.getImageData(0,0,Wc,Hc); drawWall(im,Wc,Hc,Math.round(sx),Math.round(sy),M,WH,false,!isWall(nl),!isWall(nr),false); g.putImageData(im,0,0); continue; }
+      const M=MATS[mat[i]]||MATS[6];
+      const [cx0,cy0]=toS(it.x+.5,it.y+.5); if(cx0<-80||cx0>Wc+80||cy0<-120||cy0>Hc+120) continue;
       const low = opts.cut!==false && (INTERIOR.has(back1)||INTERIOR.has(back2)) && !INTERIOR.has(nl)&&!INTERIOR.has(nr);
-      const [sx,sy]=toS(it.x,it.y); if(sx<-80||sx>Wc+80||sy<-120||sy>Hc+80) continue;
-      const Hh=low?10:WH; const im=g.getImageData(0,0,Wc,Hc);
-      drawWall(im,Wc,Hc,Math.round(sx),Math.round(sy),M,Hh,map[i]===TL.WINDOW&&!low,!isWall(nl)||low,!isWall(nr)||low,low); g.putImageData(im,0,0); }
+      const Hh=low?8:WH, win=t0===TL.WINDOW&&!low;
+      const cU1=isPanel(map[i+1]), cU0=isPanel(map[i-1]), cV1=isPanel(map[i+W]), cV0=isPanel(map[i-W]);
+      const im=g.getImageData(0,0,Wc,Hc), X=it.x+.5, Y=it.y+.5;
+      // ordem: metade de trás primeiro (-U,-V), depois a da frente (+U,+V)
+      if(cV0) drawPanel(im,Wc,Hc,toS,X,Y-.5,false,.5,Hh,M,win,low);
+      if(cU0) drawPanel(im,Wc,Hc,toS,X-.5,Y,true,.5,Hh,M,win,low);
+      if(cU1) drawPanel(im,Wc,Hc,toS,X,Y,true,.5,Hh,M,win,low);
+      if(cV1) drawPanel(im,Wc,Hc,toS,X,Y,false,.5,Hh,M,win,low);
+      if(!(cU0||cU1||cV0||cV1)){ drawPanel(im,Wc,Hc,toS,X-.1,Y,true,.2,Hh,M,false,low); }
+      g.putImageData(im,0,0); }
     else if(it.k==='f'){ const [sx,sy]=toS(it.x+.5,it.y+.5); g.fillStyle='#5a3a20'; for(const dx of [-14,0,14]) g.fillRect(sx+dx-2,sy-26+Math.abs(dx)*0,4,26); g.fillRect(sx-18,sy-22,36,4); g.fillRect(sx-18,sy-12,36,4); }
     else if(it.k==='o'){ const o=it.o, w=o.w||1, h=o.h||1;
       if(o.type==='tree'){ const [sx,sy]=toS(o.x+.5,o.y+.5); drawTree(g,Math.round(sx),Math.round(sy),o.x*7+o.y*13,biomeAt(o.x,o.y)); continue; }
