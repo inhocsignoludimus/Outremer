@@ -1,7 +1,7 @@
 // Protótipo de render isométrico (estilo "Ultima VII") — só para gerar imagens de referência.
 // Injetado na página do jogo depois do mundo pronto: isoRender(cx, cy, opts) -> canvas 1280x720
 (function(){
-const TW=48, TH=24, WH=46;
+const TW=48, TH=24, WH=62;
 const hsh=(a,b,c)=>{ let h=(a*374761393+b*668265263+(c|0)*2147483647)|0; h=Math.imul(h^(h>>>13),1274126177); return ((h^(h>>>16))>>>0)/4294967295; };
 function vnoise(x,y,s){ const xi=Math.floor(x), yi=Math.floor(y), fx=x-xi, fy=y-yi, u=fx*fx*(3-2*fx), v=fy*fy*(3-2*fy);
   const a=hsh(xi,yi,s), b=hsh(xi+1,yi,s), c=hsh(xi,yi+1,s), d=hsh(xi+1,yi+1,s); return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v; }
@@ -127,6 +127,14 @@ function drawPanel(im,Wc,Hc,toS,U0,V0,alongU,len,Hh,M,win,low){
   for(let c=0;c<=cols;c++){ const t=c/cols; for(let k=-2;k<=2;k++){ const f=k/2*TK/2;
     const U=U0+(alongU?t*len:f), V=V0+(alongU?f:t*len); const [sx,sy]=toS(U,V); put(sx,sy-Hh,mul(cap,.9+hsh(c,k,3)*.2)); } }
 }
+window.isoCharFor=function(k,e){ if(!window.ISOCHAR) return null; const C=ISOCHAR, h=((e.id||0)*7+Math.floor(e.x/7)*3+Math.floor(e.y/11))>>>0;
+  if(k==='p') return C.knight;
+  if(k==='r'){ const kd=String(e.mon||e.kind||e.type||''); return /skel/.test(kd)?C.skeleton:null; }
+  if(k==='n'){ const r=e.role||'', v=e.vendor||'', nm=String(e.name||'');
+    if(r==='guard') return C.guard; if(r==='lord') return C.lord; if(v==='mago'||/mage|mago/i.test(nm)) return C.mage; if(r==='priest') return C.mage;
+    if(e.sim||e.isSim||e.player) return [C.knight,C.guard,C.mage,C.peasant0,C.woman1][h%5];
+    const f=(e.look&&(e.look.sex==='f'||e.look.female))||e.sex==='f'||/a$/.test(nm.split(' ')[0]); return f?C['woman'+(h%3)]:C['peasant'+(h%3)]; }
+  return null; };
 window.isoRender=function(cxT,cyT,opts={}){
   const Wc=1280, Hc=720, cv=document.createElement('canvas'); cv.width=Wc; cv.height=Hc; const g=cv.getContext('2d'); g.imageSmoothingEnabled=false;
   const ox=Wc/2-(cxT-cyT)*TW/2, oy=Hc/2-(cxT+cyT)*TH/2+(opts.dy||60);
@@ -194,7 +202,9 @@ window.isoRender=function(cxT,cyT,opts={}){
       const r=isoProp(g,toS,o,biomeAt(o.x,o.y)); if(r===true) continue; const lift=r==='sprite10'?10:0;
       const [sx,sy]=toS(o.x+w/2,o.y+h); sprite(()=>{ g.translate(Math.round(sx-w*8*SC),Math.round(sy-h*16*SC-lift)); g.scale(SC,SC); try{ drawObj(g,o,0,0,performance.now()); }catch(e){} }); }
     else { const e=it.e, [sx,sy]=toS(e.x/T,e.y/T);
-      g.fillStyle='rgba(0,0,0,.3)'; g.beginPath(); g.ellipse(sx,sy,16,6,0,0,7); g.fill();
+      g.fillStyle='rgba(0,0,0,.28)'; g.beginPath(); g.ellipse(sx+5,sy+1,13,5,0,0,7); g.fill();
+      const ch=window.isoCharFor&&isoCharFor(it.k,e);
+      if(ch){ const A=ISOCHAR_ANCHOR; g.drawImage(ch,Math.round(sx-A[0]),Math.round(sy-A[1])); continue; }
       sprite(()=>{ g.translate(Math.round(sx),Math.round(sy)); g.scale(SC,SC); try{
         if(it.k==='n') drawNPC(g,e,0,0); else if(it.k==='r') drawRaider(g,e,0,0); else if(it.k==='a') drawAnimal(g,e,0,0); else drawPlayer(g,0,0); }catch(err){} }); }
   }
