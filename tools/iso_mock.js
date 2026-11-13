@@ -140,8 +140,7 @@ window.isoRender=function(cxT,cyT,opts={}){
   for(const it of list){
     if(it.k==='w'){ const i=it.y*W+it.x, t0=map[i];
       const back1=map[i-1], back2=map[i-W], nl=map[i+W], nr=map[i+1];
-      if(t0===TL.ROCK){ const M=ROCKM; const [sx,sy]=toS(it.x,it.y); if(sx<-80||sx>Wc+80||sy<-120||sy>Hc+80) continue;
-        const im=g.getImageData(0,0,Wc,Hc); drawWall(im,Wc,Hc,Math.round(sx),Math.round(sy),M,WH,false,!isWall(nl),!isWall(nr),false); g.putImageData(im,0,0); continue; }
+      if(t0===TL.ROCK){ const [sx,sy]=toS(it.x,it.y); if(sx<-80||sx>Wc+80||sy<-140||sy>Hc+80) continue; isoRock(g,toS,it.x,it.y,biomeAt(it.x,it.y),true); continue; }
       const M=MATS[mat[i]]||MATS[6];
       const [cx0,cy0]=toS(it.x+.5,it.y+.5); if(cx0<-80||cx0>Wc+80||cy0<-120||cy0>Hc+120) continue;
       const low = opts.cut!==false && (INTERIOR.has(back1)||INTERIOR.has(back2)) && !INTERIOR.has(nl)&&!INTERIOR.has(nr);
@@ -157,8 +156,10 @@ window.isoRender=function(cxT,cyT,opts={}){
       g.putImageData(im,0,0); }
     else if(it.k==='f'){ const [sx,sy]=toS(it.x+.5,it.y+.5); g.fillStyle='#5a3a20'; for(const dx of [-14,0,14]) g.fillRect(sx+dx-2,sy-26+Math.abs(dx)*0,4,26); g.fillRect(sx-18,sy-22,36,4); g.fillRect(sx-18,sy-12,36,4); }
     else if(it.k==='o'){ const o=it.o, w=o.w||1, h=o.h||1;
-      if(o.type==='tree'){ const [sx,sy]=toS(o.x+.5,o.y+.5); drawTree(g,Math.round(sx),Math.round(sy),o.x*7+o.y*13,biomeAt(o.x,o.y)); continue; }
-      const [sx,sy]=toS(o.x+w/2,o.y+h); sprite(()=>{ g.translate(Math.round(sx-w*8*SC),Math.round(sy-h*16*SC)); g.scale(SC,SC); try{ drawObj(g,o,0,0,performance.now()); }catch(e){} }); }
+      const [tx,ty]=toS(o.x+.5,o.y+.5); if(tx<-120||tx>Wc+120||ty<-60||ty>Hc+200) continue;
+      if(o.type==='tree'||o.type==='pine'||o.type==='olive'){ drawTree(g,Math.round(tx),Math.round(ty),o.x*7+o.y*13,o.type==='pine'?'n':biomeAt(o.x,o.y)); continue; }
+      const r=isoProp(g,toS,o,biomeAt(o.x,o.y)); if(r===true) continue; const lift=r==='sprite10'?10:0;
+      const [sx,sy]=toS(o.x+w/2,o.y+h); sprite(()=>{ g.translate(Math.round(sx-w*8*SC),Math.round(sy-h*16*SC-lift)); g.scale(SC,SC); try{ drawObj(g,o,0,0,performance.now()); }catch(e){} }); }
     else { const e=it.e, [sx,sy]=toS(e.x/T,e.y/T);
       g.fillStyle='rgba(0,0,0,.3)'; g.beginPath(); g.ellipse(sx,sy,16,6,0,0,7); g.fill();
       sprite(()=>{ g.translate(Math.round(sx),Math.round(sy)); g.scale(SC,SC); try{
