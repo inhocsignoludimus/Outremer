@@ -7,7 +7,7 @@
 (function(){
 const LS=(k,v)=>{ try{ if(v===undefined) return JSON.parse(localStorage.getItem('outremer_hw_'+k)||'null'); localStorage.setItem('outremer_hw_'+k,JSON.stringify(v)); }catch(e){ return null; } };
 const css=document.createElement('style'); css.textContent=`
-  .hw-bar{display:flex;align-items:center;gap:4px;height:16px;margin:-4px -4px 3px -4px;padding:0 2px;cursor:grab;touch-action:none;user-select:none}
+  .hw-bar{pointer-events:auto;display:flex;align-items:center;gap:4px;height:16px;margin:-4px -4px 3px -4px;padding:0 2px;cursor:grab;touch-action:none;user-select:none}
   .hw-bar .hw-grip{flex:1;height:8px;border-top:2px dotted rgba(200,160,90,.55);border-bottom:2px dotted rgba(200,160,90,.55);opacity:.8}
   .hw-bar button{all:unset;width:18px;height:16px;line-height:14px;text-align:center;font:700 14px sans-serif;color:#e8c070;background:rgba(0,0,0,.35);border:1px solid #6a5434;border-radius:3px;cursor:pointer}
   .hw-min>*:not(.hw-bar){display:none!important} .hw-min{width:auto!important;min-width:0!important;padding:3px 6px!important;height:auto!important}
@@ -23,6 +23,12 @@ const css=document.createElement('style'); css.textContent=`
   body:not(.playing) #bag-gump{display:none}
   body.uo #bag-gump, body.uo2 #bag-gump{display:none}
   @media (max-width:760px){ #bag-gump canvas{width:162px;height:132px} }
+  @media (pointer:coarse){ .hw-bar{height:28px;margin:-4px -4px 4px -4px} .hw-bar button{width:34px;height:26px;line-height:24px;font-size:20px}
+    .hw-min .hw-bar::before{font-size:14px} .hw-min{padding:4px 8px!important} #bag-gump .hw-bar{height:30px} }
+  #hud-toggle{position:absolute;top:50%;left:4px;transform:translateY(-50%);writing-mode:vertical-rl;z-index:7;pointer-events:auto;font:600 12px 'Pixelify Sans',sans-serif;color:#e8c070;background:rgba(18,14,10,.85);border:1px solid #6a5434;border-radius:4px;padding:4px 10px;cursor:pointer;touch-action:none}
+  @media (pointer:coarse){ #hud-toggle{font-size:15px;padding:7px 14px} }
+  body:not(.playing) #hud-toggle{display:none}
+  body.hud-hidden #stats, body.hud-hidden #clock, body.hud-hidden #journal, body.hud-hidden #bag-gump{display:none!important}
 `; document.head.appendChild(css);
 
 // ---------- arrastar / minimizar ----------
@@ -51,6 +57,11 @@ makeWin(document.getElementById('stats'),'stats','Vida');
 makeWin(document.getElementById('clock'),'clock','Menu',{minNarrow:true,defPos:()=>[innerWidth-90,4]});
 const tryJournal=()=>{ const j=document.getElementById('journal'); if(j) makeWin(j,'journal','Chat',{minNarrow:true,defPos:()=>{ const r=document.getElementById('stats').getBoundingClientRect(); return [4,r.bottom+6]; }}); else setTimeout(tryJournal,500); }; tryJournal();
 
+// botão único para esconder/mostrar todas as janelas
+const ht=document.createElement('div'); ht.id='hud-toggle'; document.getElementById('hud').appendChild(ht);
+const setHud=h=>{ document.body.classList.toggle('hud-hidden',h); ht.textContent=h?'Mostrar janelas':'Esconder janelas'; LS('hidden',h); };
+ht.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); setHud(!document.body.classList.contains('hud-hidden')); });
+setHud(!!LS('hidden'));
 // ---------- mochila ----------
 const BW=108, BH=88, IN={x:14,y:26,w:80,h:54}; // área de dentro (em pixels da arte)
 const g0=document.createElement('div'); g0.id='bag-gump'; g0.innerHTML=`<canvas width="${BW}" height="${BH}"></canvas>`;

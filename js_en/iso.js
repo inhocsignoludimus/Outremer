@@ -87,8 +87,13 @@ function propImg(o){ return cacheGet('o'+o.x+','+o.y+o.type,()=>{ const w=o.w||1
 const ANIM_TYPES=new Set(['campfire','brazier','candle','hearth','moongate','fountain','orb','cauldron','corpse','carcass']);
 // ---------- render ----------
 let isoZ=1, isoOX=0, isoOY=0, vig=null;
+// celular: câmera mais perto (menos mundo na tela = personagem maior e jogo mais leve);
+// se ainda ficar lento, aproxima mais um pouco sozinho (até um limite)
+let mobView=300, fAcc=0, fN=0, fLast=0;
+function adapt(now){ if(!MOBILE) return; if(fLast){ const dt=now-fLast; if(dt<250){ fAcc+=dt; fN++; } } fLast=now;
+  if(fN>=90){ const avg=fAcc/fN; fAcc=0; fN=0; if(avg>42&&mobView>230){ mobView=Math.max(230,mobView-25); floorCache.size>FLOOR_MAX&&0; } } }
 function isoSize(){ const Wc=Math.round((parseFloat(canvas.style.width)||innerWidth)*dpr), Hc=Math.round((parseFloat(canvas.style.height)||innerHeight)*dpr);
-  isoZ=Math.max(1,Math.min(Wc,Hc)/(MOBILE?470:780)); if(!MOBILE) isoZ=Math.max(1,Math.round(isoZ)); const bw=Math.ceil(Wc/isoZ), bh=Math.ceil(Hc/isoZ);
+  isoZ=Math.max(1,Math.min(Wc,Hc)/(MOBILE?mobView:780)); if(!MOBILE) isoZ=Math.max(1,Math.round(isoZ)); const bw=Math.ceil(Wc/isoZ), bh=Math.ceil(Hc/isoZ);
   // no celular a tela do jogo fica do tamanho do buffer e o navegador amplia (bem mais leve que redesenhar em 2400 px)
   const cw=MOBILE?bw:Wc, chh=MOBILE?bh:Hc; if(canvas.width!==cw||canvas.height!==chh){ canvas.width=cw; canvas.height=chh; }
   if(buf.width!==bw||buf.height!==bh){ buf.width=bw; buf.height=bh; if(typeof lcv!=='undefined'){ lcv.width=bw; lcv.height=bh; } } return [bw,bh]; }
@@ -141,7 +146,7 @@ function getLayer(cu,cv){ const k=chunkKey(cu,cv); let L=layers.get(k);
     const rx=r.x-sx+LPX, ry=r.y-sy+LPT; L.g.drawImage(r.cv,rx,ry); L.items.push({cv:r.cv,x:rx,y:ry,w:r.w,h:r.h,d:st[L.idx].d,low:r.low,tree:r.tree}); L.idx++; }
   L.done=true; L.g=null; while(layers.size>LAYER_MAX) layers.delete(layers.keys().next().value); return L; }
 function isoRenderFrame(now){
-  frameT0=performance.now(); const [bw,bh]=isoSize(), g=bctx;
+  frameT0=performance.now(); adapt(frameT0); const [bw,bh]=isoSize(), g=bctx;
   const px=player.x, py=player.y-6;
   isoOX=Math.round(bw/2-(px-py)/T*TW/2); isoOY=Math.round(bh/2-(px+py)/T*TH/2+20);
   if(shake>0&&OPTS.shake){ isoOX+=Math.round((Math.random()-.5)*shake*2); isoOY+=Math.round((Math.random()-.5)*shake*2); }
@@ -218,9 +223,9 @@ function isoRenderFrame(now){
     const [lx,ly]=W2S(player.x,player.y); lights.push([lx,ly-24,70,0]); if(player.lanternOn&&hasItem('lantern')) lights.push([lx,ly-24,190*flick(now,3),.22]);
     lctx.globalCompositeOperation='source-over'; lctx.clearRect(0,0,bw,bh); lctx.fillStyle=`rgba(4,6,16,${dk})`; lctx.fillRect(0,0,bw,bh); lctx.globalCompositeOperation='destination-out';
     for(const [x,y,r] of lights){ if(x<-r||x>bw+r||y<-r||y>bh+r) continue; const gr=lctx.createRadialGradient(x,y,0,x,y,r); gr.addColorStop(0,'rgba(0,0,0,1)'); gr.addColorStop(.55,'rgba(0,0,0,.7)'); gr.addColorStop(1,'rgba(0,0,0,0)'); lctx.fillStyle=gr; lctx.fillRect(x-r,y-r,2*r,2*r); }
-    g.drawImage(lcv,0,0); g.globalCompositeOperation='lighter';
+    g.drawImage(lcv,0,0); if(!MOBILE){ g.globalCompositeOperation='lighter';
     for(const [x,y,r,wm] of lights){ if(!wm) continue; const gr=g.createRadialGradient(x,y,0,x,y,r*.8); gr.addColorStop(0,`rgba(255,150,60,${wm*dk})`); gr.addColorStop(1,'rgba(255,120,40,0)'); g.fillStyle=gr; g.fillRect(x-r,y-r,2*r,2*r); }
-    g.globalCompositeOperation='source-over'; }
+    g.globalCompositeOperation='source-over'; } }
   // vinheta
   if(!vig||vig.width!==bw||vig.height!==bh){ vig=document.createElement('canvas'); vig.width=bw; vig.height=bh; const v=vig.getContext('2d'), vg=v.createRadialGradient(bw/2,bh/2,Math.min(bw,bh)*.45,bw/2,bh/2,Math.max(bw,bh)*.75); vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,.35)'); v.fillStyle=vg; v.fillRect(0,0,bw,bh); }
   g.drawImage(vig,0,0);
