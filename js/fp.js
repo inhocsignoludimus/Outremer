@@ -251,10 +251,11 @@ function fpFrame(now){
   player.aimAng=yaw; if(typeof faceFromAng==='function') player.face=faceFromAng(yaw);
   pickTarget(); lighting(now); drawEnts(now); fireFrame(now);
   R3.render(scene,cam);
+  let vm3=false; if(window.fpView3D) vm3=fpView3D(R3,now,fpLight,lowW/lowH);
   // camada 2D por cima: mira, rótulos e efeitos de tela
   ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,canvas.width,canvas.height);
   const cw=canvas.width, ch=canvas.height, k=dpr;
-  if(window.fpViewDraw) try{ fpViewDraw(ctx,lowW,lowH,now,fpLight); }catch(e){ console.error(e); }
+  if(!vm3&&window.fpViewDraw) try{ fpViewDraw(ctx,lowW,lowH,now,fpLight); }catch(e){ console.error(e); }
   ctx.fillStyle=target?'rgba(255,120,90,.95)':'rgba(255,240,200,.8)'; ctx.fillRect(cw/2-1*k,ch/2-7*k,2*k,14*k); ctx.fillRect(cw/2-7*k,ch/2-1*k,14*k,2*k);
   const v=new THREE.Vector3();
   const proj=(x,h,z)=>{ v.set(x,h,z).project(cam); if(v.z>1) return null; return [(v.x*.5+.5)*cw,(-v.y*.5+.5)*ch]; };
