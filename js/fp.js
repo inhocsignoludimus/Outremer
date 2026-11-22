@@ -20,7 +20,7 @@ canvas.parentNode.insertBefore(fpcv,canvas); canvas.style.position=canvas.style.
 let R3=null, scene, cam, sun, amb, ground=null;
 function init3(){ if(R3) return true;
   try{ R3=new THREE.WebGLRenderer({canvas:fpcv,antialias:false,powerPreference:'high-performance'}); }catch(e){ R3=null; toast('Este aparelho não tem 3D (WebGL). Usando a câmera isométrica.'); setCam('iso'); return false; }
-  R3.setPixelRatio(1); scene=new THREE.Scene(); scene.fog=new THREE.Fog(0x8aa6c0,8,FOGFAR);
+  R3.setPixelRatio(1); scene=new THREE.Scene(); window.__fpScene=scene; scene.fog=new THREE.Fog(0x8aa6c0,8,FOGFAR);
   cam=new THREE.PerspectiveCamera(64,16/9,.05,120); amb=new THREE.AmbientLight(0xffffff,.55); scene.add(amb);
   sun=new THREE.DirectionalLight(0xfff0d8,.8); sun.position.set(-3,6,-2); scene.add(sun);
   return true; }
@@ -56,7 +56,7 @@ function objMat(o){ const w=o.w||1, h=o.h||1, k=o.type+'|'+(o.kind||'')+'|'+w+'x
   const m=new THREE.SpriteMaterial({map:canvasTex(cv),alphaTest:.5}); tint.push(m); return objTex[k]={m,asp:cw/chh,hgt:chh/16*.9}; }
 // ---------- objetos em 3D de verdade (js/props3d.js: modelos do pacote PolygonSight) ----------
 const PROPKEY={counter:'counterA',display:'counterA',chest:'chest',keg:'keg',barrel:'keg',table:'table',workbench:'longtable',bed:'bed',hbed:'bed',chair:'chair',candle:'chandelier',lamp:'farol',
-  crate:'crate',storage:'crate',cauldron:'cauldron',anvil:'anvil',logs:'logs',campfire:'fire',tent:'tent',bedroll:'sleep',rack:'wstore',wrack:'wstore',tub:'water'};
+  crate:'crate',storage:'crate',cauldron:'cauldron',anvil:'anvil',logs:'logs',campfire:'fire',tent:'tent',bedroll:'sleep',rack:'wstore',wrack:'wstore',tub:'water',bench:'longtable',pew:'longtable'};
 const U3=1/45, propGeo={}; let propMat=null;
 function b64(s,T){ const b=atob(s), a=new Uint8Array(b.length); for(let i=0;i<b.length;i++) a[i]=b.charCodeAt(i); return new T(a.buffer); }
 function getPropGeo(k){ if(propGeo[k]!==undefined) return propGeo[k]; const D=window.PROPS3D&&PROPS3D[k]; if(!D) return propGeo[k]=null;
@@ -76,7 +76,8 @@ function propSpec(o){ const k=PROPKEY[o.type]; if(!k) return null; const g=getPr
   else { if(wallAt(o.x,o.y-1)) rot=0; else if(wallAt(o.x,o.y+1)) rot=Math.PI; else if(wallAt(o.x-1,o.y)) rot=Math.PI/2; else if(wallAt(o.x+1,o.y)) rot=-Math.PI/2; else rot=(C.hsh(o.x,o.y,7)*4|0)*Math.PI/2; }
   const turned=Math.abs(Math.sin(rot))>.5, fx=turned?h:w, fz=turned?w:h, big=k==='chest'||k==='keg'?.85:1.1;
   let sx, sy, sz2;
-  if(k==='counterA'){ sx=fx/sz[0]; sz2=Math.min(fz*.7,.75)/sz[2]; sy=U3*1.05; }                       // balcões encaixam lado a lado
+  if(o.type==='bench'||o.type==='pew'){ sx=fx*.9/sz[0]; sz2=Math.min(fz,.42)/sz[2]; sy=.46/sz[1]; }      // banco: mesa comprida baixa e estreita
+  else if(k==='counterA'){ sx=fx/sz[0]; sz2=Math.min(fz*.7,.75)/sz[2]; sy=U3*1.05; }                       // balcões encaixam lado a lado
   else { const s=Math.min(U3*big, fx*.92/sz[0], fz*.92/sz[2]); sx=sy=sz2=s; }
   return {k,g,rot,sx,sy,sz:sz2,w,h}; }
 const _v=new THREE.Vector3(), _nm=new THREE.Matrix3();
@@ -103,11 +104,35 @@ function isoSprite(P){ const key=P.k+'|'+P.rot.toFixed(2)+'|'+P.sx.toFixed(4)+'|
   for(let y=1;y<ch-1;y++) for(let x=1;x<cw-1;x++){ const q=(y*cw+x)*4; if(o2[q+3]) continue; if(o2[q+7]||o2[q-1]||o2[q+cw*4+3]||o2[q-cw*4+3]){ d[q]=28; d[q+1]=20; d[q+2]=16; d[q+3]=200; } else d[q+3]=o2[q+3]; }
   for(let q=3;q<d.length;q+=4) if(o2[q]) d[q]=255;
   g.putImageData(id,0,0); return isoSprites[key]={cv,ax,ay}; }
-const SPRITE3D=new Set(['counter','display','chest','keg','barrel','table','workbench','bed','hbed','chair','crate','storage','anvil','logs','tent','bedroll','rack','wrack','tub','lamp']);
+const SPRITE3D=new Set(['bench','pew','counter','display','chest','keg','barrel','table','workbench','bed','hbed','chair','crate','storage','anvil','logs','tent','bedroll','rack','wrack','tub','lamp']);
 if(typeof window.isoProp==='function'){ const _ip=window.isoProp, _ih=window.isoHasProp;
   window.isoHasProp=t=>(SPRITE3D.has(t)&&isoTexOk)||_ih(t);
   window.isoProp=function(g,toS,o,biome){ if(SPRITE3D.has(o.type)){ const P=propSpec(o), S=P&&isoSprite(P); if(S){ const [x,y]=toS(o.x+P.w/2,o.y+P.h/2); g.drawImage(S.cv,Math.round(x-S.ax),Math.round(y-S.ay)); return true; } }
     return _ip(g,toS,o,biome); }; }
+// ---------- lareira/forja em 3D: corpo de pedra encostado na parede, chaminé, boca escura com fogo animado ----------
+const fireCv=document.createElement('canvas'); fireCv.width=32; fireCv.height=32; const fireG=fireCv.getContext('2d'); let fireTex=null, fireMat=null;
+function fireFrame(now){ if(!fireTex) return; const g=fireG, f=Math.floor(now/110); g.clearRect(0,0,32,32);
+  for(let i=0;i<12;i++){ const r=Math.sin(i*127.1+f*311.7)*43758.5453, h=(r-Math.floor(r))*14+14, x=2+i*2.5; g.fillStyle=['#b8361f','#e0552a','#ffa340','#ffe08a'][i%4]; g.beginPath(); g.moveTo(x-4,32); g.lineTo(x,32-h); g.lineTo(x+4,32); g.fill(); }
+  g.fillStyle='#4a2e18'; g.fillRect(3,29,26,3); fireTex.needsUpdate=true; }
+function hearthSideW(o){ const w=o.w||1, h=o.h||1; let n=0,s=0,e=0,wv=0; for(let k=0;k<w;k++){ if(wallAt(o.x+k,o.y-1)) n++; if(wallAt(o.x+k,o.y+h)) s++; } for(let k=0;k<h;k++){ if(wallAt(o.x-1,o.y+k)) wv++; if(wallAt(o.x+w,o.y+k)) e++; }
+  const m=Math.max(n,s,e,wv); return m===0||m===n?'n':m===wv?'w':m===s?'s':'e'; }
+function addHearth(grp,o){ const forge=o.kind==='forge', w=o.w||1, h=o.h||1, side=hearthSideW(o), stone=wallMat(forge?10:6,false);
+  if(!fireTex){ fireTex=canvasTex(fireCv); fireMat=new THREE.SpriteMaterial({map:fireTex,alphaTest:.4,fog:true}); }
+  const hb=forge?1.05:1.15, dep=forge?.9*Math.min(w,h):.62, along=side==='n'||side==='s', L=(along?w:h)-.08;
+  const dirs={n:[0,1],s:[0,-1],w:[1,0],e:[-1,0]}, [fx,fz]=dirs[side];          // frente aponta para dentro do cômodo
+  const wallX=side==='w'?o.x:side==='e'?o.x+w:o.x+w/2, wallZ=side==='n'?o.y:side==='s'?o.y+h:o.y+h/2;
+  const cx=side==='w'?o.x+dep/2:side==='e'?o.x+w-dep/2:o.x+w/2, cz=side==='n'?o.y+dep/2:side==='s'?o.y+h-dep/2:o.y+h/2;
+  const bx=along?L:dep, bz=along?dep:L;
+  const body=new THREE.Mesh(new THREE.BoxGeometry(bx,hb,bz),stone); body.position.set(cx,hb/2,cz); grp.add(body);
+  const man=new THREE.Mesh(new THREE.BoxGeometry(bx+.1,.12,bz+.1),stone); man.position.set(cx,hb+.06,cz); grp.add(man);
+  const chw=L*.55, chd=dep*.5, chx=side==='w'?o.x+chd/2:side==='e'?o.x+w-chd/2:cx, chz=side==='n'?o.y+chd/2:side==='s'?o.y+h-chd/2:cz;
+  const ch=new THREE.Mesh(new THREE.BoxGeometry(along?chw:chd,WH-hb,along?chd:chw),stone); ch.position.set(chx,hb+(WH-hb)/2,chz); grp.add(ch);
+  // boca da lareira na face da frente
+  const ow=L*(forge?.62:.56), oh=hb*.62, fxp=cx+fx*(dep/2+.012), fzp=cz+fz*(dep/2+.012);
+  const hole=new THREE.Mesh(new THREE.PlaneGeometry(ow,oh),MATC.hole||(MATC.hole=(()=>{ const c=document.createElement('canvas'); c.width=8; c.height=32; const g=c.getContext('2d'), gr=g.createLinearGradient(0,0,0,32); gr.addColorStop(0,'#0c0806'); gr.addColorStop(.55,'#2a120a'); gr.addColorStop(1,'#a04010'); g.fillStyle=gr; g.fillRect(0,0,8,32); return new THREE.MeshBasicMaterial({map:canvasTex(c),fog:true}); })()));
+  hole.position.set(fxp,oh/2,fzp); hole.rotation.y=Math.atan2(fx,fz); grp.add(hole);
+  const fs=new THREE.Sprite(fireMat); fs.center.set(.5,0); fs.scale.set(ow*.9,oh*.92,1); fs.position.set(fxp+fx*.03,.04,fzp+fz*.03); grp.add(fs);
+  if(forge){ const coal=new THREE.Mesh(new THREE.PlaneGeometry(bx-.24,bz-.24),MATC.coal||(MATC.coal=new THREE.MeshBasicMaterial({color:0xb04018}))); coal.rotation.x=-Math.PI/2; coal.position.set(cx,hb+.125,cz); grp.add(coal); } }
 // ---------- geometria juntada (poucas chamadas de desenho por pedaço) ----------
 function Acc(){ return {p:[],n:[],u:[]}; }
 function quad(A,a,b,c,d,nx,ny,nz,u0,v0,u1,v1){ // a,b,c,d em sentido anti-horário visto de fora
@@ -146,7 +171,7 @@ function buildChunk(cu,cv){
     if(o&&o.x===x&&o.y===y&&(o.type==='tree'||o.type==='pine'||o.type==='olive')){ const v=treeVariant(o), u0=v/TREEV.length, u1=(v+1)/TREEV.length, hh=4.4+C.hsh(x,y,2)*1.6, ww=hh*150/190, cx=x+.5, cz=y+.5, b=-.12;
       quad(treeAcc,[cx-ww/2,b,cz],[cx+ww/2,b,cz],[cx+ww/2,b+hh,cz],[cx-ww/2,b+hh,cz],0,0,1,u0,0,u1,1);
       quad(treeAcc,[cx,b,cz-ww/2],[cx,b,cz+ww/2],[cx,b+hh,cz+ww/2],[cx,b+hh,cz-ww/2],1,0,0,u0,0,u1,1); }
-    else if(o&&o.x===x&&o.y===y&&o.type!=='rug'){ const pm=propMesh(o); if(pm) addProp(propAcc,pm); else { const om=objMat(o), s=new THREE.Sprite(om.m); s.center.set(.5,0); s.scale.set(om.hgt*om.asp,om.hgt,1); s.position.set(o.x+(o.w||1)/2,0,o.y+(o.h||1)/2); grp.add(s); }
+    else if(o&&o.x===x&&o.y===y&&o.type!=='rug'){ if(o.type==='hearth'){ addHearth(grp,o); (grp.userData.lights=grp.userData.lights||[]).push([o.x+(o.w||1)/2,o.y+(o.h||1)/2]); } else { const pm=propMesh(o); if(pm) addProp(propAcc,pm); else { const om=objMat(o), s=new THREE.Sprite(om.m); s.center.set(.5,0); s.scale.set(om.hgt*om.asp,om.hgt,1); s.position.set(o.x+(o.w||1)/2,0,o.y+(o.h||1)/2); grp.add(s); } }
       if(o.light) grp.userData.lights=(grp.userData.lights||[]).concat([[o.x+.5,o.y+.5]]); }
     if(doors.has(i)){ const alongX=isWallT(map[i-1])||isWallT(map[i+1]); const m=new THREE.Mesh(new THREE.BoxGeometry(alongX?1:.12,WH*.85,alongX?.12:1),MATC.door||(MATC.door=new THREE.MeshLambertMaterial({color:0x6a4628})));
       m.position.set(x+.5,WH*.425,y+.5); m.userData.door=i; grp.add(m); (grp.userData.doors=grp.userData.doors||[]).push(m); }
@@ -224,7 +249,7 @@ function fpFrame(now){
   cam.position.set(player.x/T, EYE+bob+(player.onTower?2.2:0)+(player.mount?.5:0), player.y/T);
   cam.rotation.order='YXZ'; cam.rotation.y=-yaw-Math.PI/2; cam.rotation.x=pitch;
   player.aimAng=yaw; if(typeof faceFromAng==='function') player.face=faceFromAng(yaw);
-  pickTarget(); lighting(now); drawEnts(now);
+  pickTarget(); lighting(now); drawEnts(now); fireFrame(now);
   R3.render(scene,cam);
   // camada 2D por cima: mira, rótulos e efeitos de tela
   ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,canvas.width,canvas.height);

@@ -86,6 +86,58 @@ function propImg(o){ return cacheGet('o'+o.x+','+o.y+o.type,()=>{ const w=o.w||1
   const cv=document.createElement('canvas'); cv.width=cw; cv.height=ch; const g=cv.getContext('2d');
   const r=isoProp(g,localToS(ax,ay,o.x,o.y),o,biomeAt(o.x,o.y)); if(r!==true) return NOPROP; gradeCanvas(cv); return {cv,ax,ay}; }); }
 const ANIM_TYPES=new Set(['campfire','brazier','candle','hearth','moongate','fountain','orb','cauldron','corpse','carcass']);
+// ---------- lareira/forja em perspectiva isométrica de verdade, encostada na parede e virada para o cômodo ----------
+const WHT=WH/2.6;   // px por quadrado de altura
+function hearthSide(o){ const w=o.w||1, h=o.h||1, isW=(x,y)=>x>=0&&y>=0&&x<W&&y<H&&(map[y*W+x]===TL.WALL||map[y*W+x]===TL.WINDOW);
+  let n=0,s=0,e=0,wv=0; for(let k=0;k<w;k++){ if(isW(o.x+k,o.y-1)) n++; if(isW(o.x+k,o.y+h)) s++; } for(let k=0;k<h;k++){ if(isW(o.x-1,o.y+k)) wv++; if(isW(o.x+w,o.y+k)) e++; }
+  const m=Math.max(n,s,e,wv); return m===0?'n':m===n?'n':m===wv?'w':m===s?'s':'e'; }  // lado da PAREDE
+function isoHearth(g,o,now){ const forge=o.kind==='forge', w=o.w||1, h=o.h||1, side=hearthSide(o);
+  const P=(u,v,z)=>{ const [X,Y]=W2S(u*T,v*T); return [X,Y-z*WHT]; };
+  const base=forge?[86,80,74]:[124,116,104], mort=forge?[48,44,40]:[70,64,56];
+  const rgb=(c,f)=>`rgb(${c[0]*f|0},${c[1]*f|0},${c[2]*f|0})`;
+  // face: origem A, U = vetor horizontal (u,v), altura de z0 a z1; desenha pedras em fiadas
+  function face(A,Uv,z0,z1,f){ const q=[P(A[0],A[1],z0),P(A[0]+Uv[0],A[1]+Uv[1],z0),P(A[0]+Uv[0],A[1]+Uv[1],z1),P(A[0],A[1],z1)];
+    g.fillStyle=rgb(base,f); g.beginPath(); g.moveTo(...q[0]); for(const p of q.slice(1)) g.lineTo(...p); g.closePath(); g.fill();
+    g.strokeStyle=rgb(mort,f); g.lineWidth=1; const L=Math.hypot(Uv[0],Uv[1]), rows=Math.max(1,Math.round((z1-z0)/.2));
+    for(let r=1;r<rows;r++){ const z=z0+(z1-z0)*r/rows, a=P(A[0],A[1],z), b=P(A[0]+Uv[0],A[1]+Uv[1],z); g.beginPath(); g.moveTo(a[0]+.5,a[1]+.5); g.lineTo(b[0]+.5,b[1]+.5); g.stroke(); }
+    for(let r=0;r<rows;r++){ const za=z0+(z1-z0)*r/rows, zb=z0+(z1-z0)*(r+1)/rows, cols=Math.max(1,Math.round(L/.3)); for(let c=0;c<cols;c++){ const t=(c+(r%2?.5:0))/cols; if(t<=0||t>=1) continue;
+      const a=P(A[0]+Uv[0]*t,A[1]+Uv[1]*t,za), b=P(A[0]+Uv[0]*t,A[1]+Uv[1]*t,zb); g.beginPath(); g.moveTo(a[0]+.5,a[1]); g.lineTo(b[0]+.5,b[1]); g.stroke(); } }
+    // luz de cima (aresta superior clara)
+    const t0=P(A[0],A[1],z1), t1=P(A[0]+Uv[0],A[1]+Uv[1],z1); g.strokeStyle=rgb(base,Math.min(1.35,f*1.3)); g.beginPath(); g.moveTo(t0[0],t0[1]+.5); g.lineTo(t1[0],t1[1]+.5); g.stroke(); }
+  function top(x0,y0,x1,y1,z,f){ const q=[P(x0,y0,z),P(x1,y0,z),P(x1,y1,z),P(x0,y1,z)]; g.fillStyle=rgb(base,f); g.beginPath(); g.moveTo(...q[0]); for(const p of q.slice(1)) g.lineTo(...p); g.closePath(); g.fill(); }
+  function box(x0,y0,x1,y1,z0,z1){ face([x0,y1],[x1-x0,0],z0,z1,.86); face([x1,y1],[0,y0-y1],z0,z1,.68); top(x0,y0,x1,y1,z1,1.08); }
+  // abertura com fogo numa face visível (sul = +y, leste = +x)
+  function opening(A,Uv,wid,hgt){ const c=.5, pts=[]; const at=(t,z)=>P(A[0]+Uv[0]*t,A[1]+Uv[1]*t,z);
+    const t0=c-wid/2, t1=c+wid/2; pts.push(at(t0,0)); for(let k=0;k<=8;k++){ const an=Math.PI*k/8, t=c-Math.cos(an)*wid/2, z=hgt*.72+Math.sin(an)*hgt*.28; pts.push(at(t,z)); } pts.push(at(t1,0));
+    g.fillStyle='#140c08'; g.beginPath(); g.moveTo(...pts[0]); for(const p of pts.slice(1)) g.lineTo(...p); g.closePath(); g.fill();
+    g.save(); g.clip(); const fr=Math.floor(now/110);
+    for(let i=0;i<10;i++){ const t=t0+wid*(i+.5)/10, hh=hgt*(.25+.55*C_h(i,fr)), a=at(t-wid*.06,.02), b=at(t+wid*.06,.02), tp=at(t,hh);
+      g.fillStyle=['#b8361f','#e0552a','#ffa340','#ffe08a'][i%4]; g.beginPath(); g.moveTo(...a); g.lineTo(...tp); g.lineTo(...b); g.closePath(); g.fill(); }
+    const l0=at(t0+wid*.1,.03), l1=at(t1-wid*.1,.03); g.strokeStyle='#4a2e18'; g.lineWidth=3; g.beginPath(); g.moveTo(...l0); g.lineTo(...l1); g.stroke(); g.restore();
+    // brilho no chão em frente
+    const fc=at(c,0); g.save(); g.globalCompositeOperation='lighter'; const gr=g.createRadialGradient(fc[0],fc[1]+6,1,fc[0],fc[1]+6,26+6*Math.sin(now/180)); gr.addColorStop(0,'rgba(255,140,50,.35)'); gr.addColorStop(1,'rgba(255,140,50,0)'); g.fillStyle=gr; g.fillRect(fc[0]-34,fc[1]-24,68,56); g.restore(); }
+  const X0=o.x, Y0=o.y, X1=o.x+w, Y1=o.y+h, hb=forge?1.05:1.15, dep=forge?.9*Math.min(w,h):.62, mantle=.12;
+  // corpo encostado na parede
+  let bx0=X0+.04, by0=Y0+.04, bx1=X1-.04, by1=Y1-.04;
+  if(side==='n') by1=Y0+dep; if(side==='s') by0=Y1-dep; if(side==='w') bx1=X0+dep; if(side==='e') bx0=X1-dep;
+  if(side==='n'){ bx0=X0+.04; bx1=X1-.04; by0=Y0; } if(side==='s'){ by1=Y1; } if(side==='w'){ bx0=X0; } if(side==='e'){ bx1=X1; }
+  // chaminé (mais estreita, colada na parede, até o alto da parede)
+  const cw=(side==='n'||side==='s'?(bx1-bx0):(by1-by0))*.55, cd=dep*.5;
+  let cx0,cy0,cx1,cy1; if(side==='n'||side==='s'){ const m=(bx0+bx1)/2; cx0=m-cw/2; cx1=m+cw/2; cy0=side==='n'?by0:by1-cd; cy1=side==='n'?by0+cd:by1; } else { const m=(by0+by1)/2; cy0=m-cw/2; cy1=m+cw/2; cx0=side==='w'?bx0:bx1-cd; cx1=side==='w'?bx0+cd:bx1; }
+  const back=side==='n'||side==='w';   // chaminé atrás do corpo (desenha antes) ou na frente (depois)
+  if(back) box(cx0,cy0,cx1,cy1,hb,2.6);
+  box(bx0,by0,bx1,by1,0,hb);
+  box(bx0-.04,by0-.04,bx1+.04,by1+.04,hb,hb+mantle);   // prateleira de pedra
+  if(side==='n') opening([bx0,by1],[bx1-bx0,0],forge?.62:.56,hb*.62);
+  if(side==='w') opening([bx1,by1],[0,by0-by1],forge?.62:.56,hb*.62);
+  // forja: brasas acesas em cima da bancada de pedra
+  if(forge){ const z=hb+mantle, ix0=bx0+.12, iy0=by0+.12, ix1=bx1-.12, iy1=by1-.12; const q=[P(ix0,iy0,z),P(ix1,iy0,z),P(ix1,iy1,z),P(ix0,iy1,z)];
+    g.fillStyle='#2a1c16'; g.beginPath(); g.moveTo(...q[0]); for(const p of q.slice(1)) g.lineTo(...p); g.closePath(); g.fill();
+    const fr=Math.floor(now/160); for(let i=0;i<46;i++){ const u=ix0+(ix1-ix0)*C_h(i,1), v=iy0+(iy1-iy0)*C_h(i,2), b=C_h(i,fr); const pp=P(u,v,z); g.fillStyle=b>.66?'#ffd27a':b>.33?'#ff7a2a':'#a8341c'; g.fillRect(pp[0]|0,pp[1]|0,2,1); }
+    const c=P((ix0+ix1)/2,(iy0+iy1)/2,z); g.save(); g.globalCompositeOperation='lighter'; const gr=g.createRadialGradient(c[0],c[1],1,c[0],c[1],30); gr.addColorStop(0,'rgba(255,120,40,.4)'); gr.addColorStop(1,'rgba(255,120,40,0)'); g.fillStyle=gr; g.fillRect(c[0]-30,c[1]-30,60,60); g.restore(); }
+  if(forge&&back){ const a=P(bx1,by1,.0); g.fillStyle='#5a3e28'; g.fillRect(a[0]+2,a[1]-14,4,12); }   // fole/cabo
+}
+const C_h=(i,f)=>{ const x=Math.sin(i*127.1+f*311.7)*43758.5453; return x-Math.floor(x); };
 // ---------- render ----------
 let isoZ=1, isoOX=0, isoOY=0, vig=null;
 // celular: câmera mais perto (menos mundo na tela = personagem maior e jogo mais leve);
@@ -196,6 +248,7 @@ function isoRenderFrame(now){
       try{ if(it.k==='n') drawNPC(g,e,0,0); else if(it.k==='r') drawRaider(g,e,0,0); else if(it.k==='a') drawAnimal(g,e,0,0); else drawPlayer(g,0,-(player.onTower?26:0)); }catch(err){}
       g.restore(); e.face=of; continue; }
     if(it.k==='door'){ const dr=doors.get(it.y*W+it.x); if(!dr||dr.open) continue; const im=doorImg(it.x,it.y,false); if(!im) continue; const [X,Y]=W2S((it.x+.5)*T,(it.y+.5)*T); g.drawImage(im.cv,X-im.ax,Y-im.ay); continue; }
+    if(it.k==='sprite'&&it.o.type==='hearth'){ try{ isoHearth(g,it.o,now); }catch(e){} continue; }
     if(it.k==='sprite'){ const o=it.o, w=o.w||1, h=o.h||1, [X,Y]=W2S((o.x+w/2)*T,(o.y+h)*T); g.save(); g.translate(Math.round(X-w*8*SCL),Math.round(Y-h*16*SCL)); g.scale(SCL,SCL); try{ drawObj(g,o,0,0,now); }catch(e){} g.restore(); continue; }
     // peça fixa de um pedaço ainda não assado
     const r=staticImg(it); if(!r) continue; const fade=it.d>pdep&&!r.low&&hits(r,PX,PY); if(fade){ hid=true; g.globalAlpha=it.tree?.3:.38; } g.drawImage(r.cv,r.x,r.y); g.globalAlpha=1;
