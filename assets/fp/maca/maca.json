@@ -1,0 +1,96 @@
+{
+ "item": "maca",
+ "nome": "Maça",
+ "familia_maos": "uma_mao",
+ "pasta_maos": "../maos/uma_mao",
+ "quadro": [
+  256,
+  256
+ ],
+ "hframes": 7,
+ "pivo": {
+  "nome": "inferior_direito",
+  "x": 256,
+  "y": 256,
+  "godot_offset": [
+   -256,
+   -256
+  ]
+ },
+ "quadros": [
+  {
+   "indice": 0,
+   "id": "repouso"
+  },
+  {
+   "indice": 1,
+   "id": "preparo"
+  },
+  {
+   "indice": 2,
+   "id": "golpe_inicio"
+  },
+  {
+   "indice": 3,
+   "id": "golpe"
+  },
+  {
+   "indice": 4,
+   "id": "finalizacao"
+  },
+  {
+   "indice": 5,
+   "id": "retorno"
+  },
+  {
+   "indice": 6,
+   "id": "bloqueio"
+  }
+ ],
+ "camadas_do_item": [
+  "arma"
+ ],
+ "ordem_camadas_baixo_para_cima": [
+  "arma",
+  "manga_corpo (tingir: cor da roupa do corpo)",
+  "braco_<tipo> | braco_<tipo>_cinza+_detalhe",
+  "mao_pele (tingir: pele) + anel_<tipo>  — OU —  luva_<tipo> | luva_<tipo>_cinza+_detalhe"
+ ],
+ "animacoes": {
+  "ataque": {
+   "quadros": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    0
+   ],
+   "ms": [
+    0,
+    140,
+    70,
+    70,
+    170,
+    130,
+    0
+   ],
+   "impacto": 3,
+   "dano": [
+    2,
+    4
+   ]
+  },
+  "bloqueio_entrar": {
+   "quadros": [
+    0,
+    6
+   ],
+   "ms": [
+    0,
+    90
+   ]
+  }
+ }
+}

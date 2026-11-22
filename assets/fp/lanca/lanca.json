@@ -1,0 +1,74 @@
+{
+ "item": "lanca",
+ "nome": "Lança",
+ "familia_maos": "lanca",
+ "pasta_maos": "../maos/lanca",
+ "quadro": [
+  256,
+  256
+ ],
+ "hframes": 4,
+ "pivo": {
+  "nome": "inferior_centro",
+  "x": 128,
+  "y": 256,
+  "godot_offset": [
+   -128,
+   -256
+  ]
+ },
+ "quadros": [
+  {
+   "indice": 0,
+   "id": "repouso"
+  },
+  {
+   "indice": 1,
+   "id": "recuo"
+  },
+  {
+   "indice": 2,
+   "id": "estocada"
+  },
+  {
+   "indice": 3,
+   "id": "guarda_alta"
+  }
+ ],
+ "camadas_do_item": [
+  "arma"
+ ],
+ "ordem_camadas_baixo_para_cima": [
+  "arma",
+  "manga_corpo (tingir: cor da roupa do corpo)",
+  "braco_<tipo> | braco_<tipo>_cinza+_detalhe",
+  "mao_pele (tingir: pele) + anel_<tipo>  — OU —  luva_<tipo> | luva_<tipo>_cinza+_detalhe"
+ ],
+ "animacoes": {
+  "estocada": {
+   "quadros": [
+    0,
+    1,
+    2,
+    0
+   ],
+   "ms": [
+    0,
+    150,
+    80,
+    160
+   ],
+   "impacto": 2
+  },
+  "guarda_alta": {
+   "quadros": [
+    0,
+    3
+   ],
+   "ms": [
+    0,
+    100
+   ]
+  }
+ }
+}

@@ -1,0 +1,79 @@
+{
+ "item": "escudo_cruzado",
+ "nome": "Escudo Cruzado",
+ "familia_maos": "escudo",
+ "pasta_maos": "../maos/escudo",
+ "quadro": [
+  256,
+  256
+ ],
+ "hframes": 4,
+ "pivo": {
+  "nome": "inferior_esquerdo",
+  "x": 0,
+  "y": 256,
+  "godot_offset": [
+   0,
+   -256
+  ]
+ },
+ "quadros": [
+  {
+   "indice": 0,
+   "id": "repouso"
+  },
+  {
+   "indice": 1,
+   "id": "erguer"
+  },
+  {
+   "indice": 2,
+   "id": "bloqueio"
+  },
+  {
+   "indice": 3,
+   "id": "baixar"
+  }
+ ],
+ "camadas_do_item": [
+  "escudo"
+ ],
+ "ordem_camadas_baixo_para_cima": [
+  "escudo",
+  "manga_corpo (tingir: cor da roupa do corpo)",
+  "braco_<tipo> | braco_<tipo>_cinza+_detalhe",
+  "mao_pele (tingir: pele) + anel_<tipo>  — OU —  luva_<tipo> | luva_<tipo>_cinza+_detalhe"
+ ],
+ "animacoes": {
+  "erguer": {
+   "quadros": [
+    0,
+    1,
+    2
+   ],
+   "ms": [
+    0,
+    70,
+    70
+   ]
+  },
+  "segurar": {
+   "quadros": [
+    2
+   ],
+   "loop": true
+  },
+  "baixar": {
+   "quadros": [
+    2,
+    3,
+    0
+   ],
+   "ms": [
+    0,
+    90,
+    90
+   ]
+  }
+ }
+}
