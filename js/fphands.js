@@ -23,31 +23,35 @@ const RR=(x,y,w,h,r,c)=>{ g.beginPath(); g.moveTo(x+r,y); g.arcTo(x+w,y,x+w,y+h,
 const clip=(fn,draw)=>{ g.save(); fn(); g.clip(); draw(); g.restore(); };
 // ---------- MÃO DIREITA fechada num cabo vertical, vista de trás (costas da mão para a direita) ----------
 // origem = centro do cabo dentro do punho; unidades = pixels finais
-function fist(S,glove,metal){ const K=glove||S;
-  // costas da mão
-  const back=[1,-12, 9,-13.5, 15,-10, 18,-3, 18,5, 14,10, 6,11, 1,9];
-  P(back,K.m);
-  clip(()=>{ g.beginPath(); g.moveTo(back[0],back[1]); for(let i=2;i<back.length;i+=2) g.lineTo(back[i],back[i+1]); g.closePath(); },()=>{
-    P([1,-12, 9,-13.5, 15,-10, 13,-4, 6,-6, 1,-5],K.l);           // luz de cima
-    P([18,-3, 18,5, 14,10, 6,11, 9,4, 15,1],K.s);                  // sombra de baixo/direita
-    LN([4,-9, 13,-2],K.l,.7); LN([4,-3, 14,2],K.l,.6); LN([4,3, 13,5],K.m,.5);   // tendões
-    if(metal){ for(let k=0;k<3;k++) LN([2,-8+k*6, 17,-4+k*5],IRONR.d,.8); }
-  });
-  // nós dos dedos (articulação da base) na borda esquerda
-  for(let k=0;k<4;k++){ const y=-9.5+k*5.4; E(1.8,y,2.8,2.4,K.m); E(1.2,y-.9,1.6,1.1,K.l); E(1.0,y-1.2,.6,.45,K.h); }
-  // dedos dobrados por cima do cabo (do lado de perto), um embaixo do outro
-  const fw=[10,10.5,10,8.5];
-  for(let k=0;k<4;k++){ const y=-12+k*5.6, w=fw[k], x=-w+1;
-    RR(x,y,w+1,5.6,2.6,K.m); RR(x+.6,y+.4,w-.4,2,1.2,K.l); R(x+1.2,y+4.4,w-1,1.2,K.s);   // luz no alto, sombra no vinco
-    E(x+1.2,y+2.6,1.5,2.2,K.l); E(x+.9,y+1.8,.6,.8,K.h);                                 // junta do meio (dobra)
-    LN([x+3,y+1.4, x+3.4,y+4.2],K.s,.45);                                                // ruga da junta
-    if(!glove){ RR(x-.6,y+1.2,2.2,3.2,1,'#e8b0a0'); R(x-.2,y+1.6,.8,1.2,'#fff0e8'); }   // unhas aparecendo
-    if(metal){ RR(x+2,y+.8,w-3,3.4,1,IRONR.m); R(x+2.4,y+1,w-4,1,IRONR.h); } }
-  // polegar cruzando a frente do indicador
-  P([12,-9, 6,-15, -1,-16, -6,-15, -8,-12.5, -3,-11, 5,-9.5],K.m);
-  P([12,-9, 6,-15, -1,-16, -6,-15, -5,-14, 2,-13.4, 8,-11.6],K.l);
-  E(-6,-14,2.4,1.9,K.m); if(!glove){ E(-6.6,-14.4,1.6,1.1,'#e8b0a0'); E(-7,-14.8,.6,.4,'#fff4ec'); }
-  LN([3,-12.4, 4,-10.2],K.s,.5); E(0,-15,.9,.5,K.h);
+function fist(S,glove,metal){ const K=glove||S, nail=glove?null:'#e9b7a8';
+  // massa da mão (costas/lateral da palma) do lado direito, descendo até o pulso
+  const M0=[-2,-11, 7,-13, 14,-10, 18,-3, 19,6, 18,14, 15,21, 6,21, 1,15, -2,6];
+  P(M0,K.m);
+  clip(()=>{ g.beginPath(); g.moveTo(M0[0],M0[1]); for(let i=2;i<M0.length;i+=2) g.lineTo(M0[i],M0[i+1]); g.closePath(); },()=>{
+    P([-1,-11, 7,-13, 14,-10, 16,-4, 8,-4, 2,0, -1,4],K.l);                 // luz no alto
+    P([19,6, 18,14, 15,21, 9,21, 13,12, 16,4],K.s);                          // sombra embaixo/direita
+    E(9,0,4,6.5,K.l,.5); E(8,-2,1.2,2.4,K.h,.5);                            // volume do músculo do polegar
+    LN([10,12, 15,19],K.s,.55); LN([4,9, 9,16],K.s,.45);                     // vincos do pulso
+    if(metal){ for(let k=0;k<4;k++) LN([0,-8+k*7, 19,-6+k*7],IRONR.d,.9); R(2,-9,15,2,IRONR.h); } });
+  // quatro dedos dobrados empilhados à esquerda (falange do meio + junta), pontas enfiadas na palma com a unha aparecendo
+  const D=[[-12,-8.8,15,6],[-13,-2.8,16,6.2],[-12.4,3.4,15.4,6],[-10.6,9.4,13.4,5.2]];
+  for(let k=3;k>=0;k--){ const [x,y,w,h]=D[k];
+    RR(x,y,w,h,h*.48,K.m);                                                   // dedo
+    RR(x+1,y+.4,w-2.4,h*.42,h*.2,K.l);                                       // luz em cima
+    R(x+1.5,y+h-1.3,w-3,1.3,K.s);                                            // sombra embaixo
+    E(x+1.3,y+h*.48,1.9,h*.44,K.l); E(x+.9,y+h*.32,.7,.9,K.h);               // junta do meio (ponta dobrada)
+    LN([x+3.6,y+1, x+3.2,y+h-1],K.s,.5); LN([x+5,y+1.4, x+4.8,y+h-1.4],K.s,.35);   // rugas da junta
+    if(nail){ RR(x+1.6,y+h-2.4,3.6,2.6,1.1,K.s); RR(x+2,y+h-2.2,2.8,1.9,.9,nail); R(x+2.4,y+h-2,1,.8,'#fff3ec'); }  // ponta e unha por baixo
+    LN([x+2,y+h, x+w-1,y+h+.2],K.d,.8);                                       // vão entre os dedos
+    if(metal){ RR(x+3,y+.6,w-5,h-1.6,1,IRONR.m); R(x+3.4,y+.8,w-6,1,IRONR.h); } }
+  // vinco escuro entre os dedos e a palma
+  LN([2,-8, 2.6,13],K.d,.7);
+  // polegar por cima, cruzando o indicador da direita para a esquerda, unha na ponta
+  const T=[15,-6, 11,-12, 4,-15.5, -6,-16.5, -12.5,-15.5, -14,-12.5, -11,-10.5, 0,-10.5, 7,-8.5];
+  P(T,K.m); P([15,-6, 11,-12, 4,-15.5, -6,-16.5, -12.5,-15.5, -12,-14.4, -3,-14.6, 5,-13, 11,-9.6],K.l);
+  E(-11,-13.6,3.4,2.8,K.m); if(nail){ RR(-14,-16.4,5,3.6,1.6,nail); R(-13.4,-16,1.8,1,'#fff3ec'); LN([-9,-16.4, -9,-12.8],K.s,.5); }
+  LN([2,-13.8, 3,-11],K.s,.5); LN([-1,-14.6, -.5,-11.4],K.s,.4);            // dobra do polegar
+  LN([-11,-10.4, 6,-8.6],K.d,.6);                                             // sombra do polegar sobre o indicador
 }
 // punho fechado visto de trás e de cima (para socar): nós dos dedos em cima, polegar do lado de dentro
 function fistTop(S,glove,metal){ const K=glove||S;
@@ -255,10 +259,10 @@ function paintFrame(k,id,pose,pi,C,lw,lh,extra){
   const [px,py,ang,sc]=pose, [X,Y]=base(px,py);
   g.save(); g.translate(X,Y); g.scale(s*SS*sc*Z,s*SS*sc*Z);
   // antebraço vai do pulso até o canto de baixo à direita (sempre fora da tela)
-  const wr=[12*Math.cos(ang)-(1)*Math.sin(ang), 12*Math.sin(ang)+1*Math.cos(ang)];
+  const wr=[11*Math.cos(ang)-(17)*Math.sin(ang), 11*Math.sin(ang)+17*Math.cos(ang)];
   const el=[((lw/2+60)/s-px)/(sc*Z), (40/s-py)/(sc*Z)];
   g.save(); g.rotate(ang); weaponArt(id,k); g.restore();
-  forearm(wr[0],wr[1],el[0],el[1],10,13,C.B,C.brace);
+  forearm(wr[0],wr[1],el[0],el[1],9,13,C.B,C.brace);
   g.save(); g.rotate(ang); fist(C.S,C.G,C.gm); g.restore();
   if(k==='pole'||k==='staff'){ // segunda mão mais abaixo na haste
     const d2=-36, w2=[-d2*Math.sin(ang)-12*Math.cos(ang), d2*Math.cos(ang)+4]; forearm(w2[0],w2[1],w2[0]-120,w2[1]+150,9,13,C.B,C.brace); g.save(); g.rotate(ang); g.translate(0,d2); g.scale(-1,1); fist(C.S,C.G,C.gm); g.restore(); }
