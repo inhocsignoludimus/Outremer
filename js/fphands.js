@@ -62,6 +62,26 @@ function fistTop(S,glove,metal){ const K=glove||S;
   R(-13,-8,26,1.6,K.s);
   for(const x of [-9.8,-3.3,3.3,9.8]){ E(x,-6,3.8,3,K.m); E(x-.6,-6.8,2.3,1.7,K.l); E(x-1,-7.3,.8,.6,K.h); }   // nós dos dedos
   if(metal) for(const x of [-9.8,-3.3,3.3,9.8]){ RR(x-3,-15,6,6,1,IRONR.m); R(x-2.4,-14.6,4.6,1.2,IRONR.h); } }
+// mão ABERTA vista pelas costas (magia), dedos para cima e afastados; origem = meio do pulso
+function handOpen(S,glove,metal,spread){ const K=glove||S, sp=spread||1;
+  // dedos (desenhados antes da mão para a base ficar coberta)
+  const F=[[-8,-21,-.16,20,4.6],[-2.6,-23,-.05,22,4.8],[2.8,-22.5,.06,20.5,4.6],[8,-20,.18,16,4.1]];
+  for(const [x,y,a,len,w] of F){ g.save(); g.translate(x,y); g.rotate(a*sp);
+    RR(-w/2,-len,w,len+2,w/2,K.m); RR(-w/2+.6,-len+.6,w*.45,len,w*.3,K.l); R(w/2-1.2,-len+2,1.2,len-2,K.s);
+    LN([-w/2+.8,-len*.62, w/2-.8,-len*.6],K.s,.5); LN([-w/2+.8,-len*.3, w/2-.8,-len*.28],K.s,.5);       // dobras
+    E(0,-len*.62,w*.32,.9,K.l); E(0,-len*.3,w*.34,1,K.l);
+    if(!glove){ RR(-w/2+.8,-len+.8,w-1.6,4.2,1.4,'#e8b4a4'); R(-w/2+1.2,-len+1.2,1,1.6,'#fff2ea'); }
+    if(metal){ RR(-w/2+.4,-len*.55,w-.8,len*.5,1,IRONR.m); R(-w/2+.8,-len*.55,w-1.6,1,IRONR.h); }
+    g.restore(); }
+  // polegar para fora
+  g.save(); g.translate(-9,-8); g.rotate(-.85*sp); RR(-2.8,-16,5.6,17,2.8,K.m); RR(-2.2,-15.4,2.4,15,1.2,K.l); if(!glove){ RR(-2,-15.6,4,3.6,1.2,'#e8b4a4'); } g.restore();
+  // costas da mão
+  const B=[-9,0, 9,0, 12,-14, 11,-22, -11,-21, -12,-12];
+  P(B,K.m); clip(()=>{ g.beginPath(); g.moveTo(B[0],B[1]); for(let i=2;i<B.length;i+=2) g.lineTo(B[i],B[i+1]); g.closePath(); },()=>{
+    P([-12,-12, -11,-21, 4,-22, -2,-10, -9,0],K.l); P([12,-14, 11,-22, 6,-22, 5,-6, 9,0],K.s);
+    for(const x of [-7.5,-2.6,2.6,7.6]) LN([x,-19, x*.3,-2],x<0?K.h:K.m,.55);
+    if(metal) for(let k=0;k<3;k++) LN([-12,-6-k*5, 12,-7-k*5],IRONR.d,.9); });
+  for(const x of [-8,-2.7,2.8,8]){ E(x,-21,2.4,1.8,K.l); E(x-.5,-21.6,.8,.6,K.h); } }
 // braçadeira/antebraço: do pulso até fora da tela (cotovelo)
 function forearm(wx,wy,ex,ey,w0,w1,C,brace){ const dx=ex-wx, dy=ey-wy, L=Math.hypot(dx,dy), nx=-dy/L, ny=dx/L;
   const q=[wx+nx*w0,wy+ny*w0, ex+nx*w1,ey+ny*w1, ex-nx*w1,ey-ny*w1, wx-nx*w0,wy-ny*w0];
@@ -139,6 +159,35 @@ function shieldArt(W){ const k=W.kind||'round', C=ramp(W.col||'#7a5a3a'), metal=
     if(!metal) for(let x=-30;x<34;x+=10) LN([x,-60, x,70],C.d,.6);
     if(k==='cross'||/crusader/i.test(W.name||'')){ const cc=hx(W.col||'#eee')[0]>150?'#b0201a':'#f0e8d8'; R(-5,-38,10,78,cc); R(-26,-16,52,10,cc); R(-5,-38,3,78,'rgba(255,255,255,.25)'); } });
   LN(pts.concat(pts.slice(0,2)),rim.l,1.2); for(let i=0;i<pts.length;i+=2) E(pts[i]*.92,pts[i+1]*.92,1.2,1.2,rim.h); }
+// escudo visto POR TRÁS: tábuas internas (ou chapa), borda, rebites, alça de couro onde a mão segura e a
+// braçadeira por onde passa o antebraço
+function shieldBack(W,C){ const k=W.kind||'round', metal=/iron|steel/.test(W.mat||''), IN=metal?IRONR:WOODR, RIM=metal?IRONR:{d:'#2a2c30',s:'#4a4e56',m:'#6e727a',l:'#9a9ea6',h:'#d0d4da'};
+  let pts, round=k==='buckler'||k==='round', rr=k==='buckler'?32:46;
+  if(!round) pts=k==='kite'?[-34,-52, 34,-52, 34,6, 0,72, -34,6]:k==='tower'?[-36,-64, 36,-64, 36,64, -36,64]:[-38,-44, 38,-44, 38,0, 20,34, 0,50, -20,34, -38,0];
+  const shape=(sc)=>{ g.beginPath(); if(round) g.ellipse(0,0,rr*.86*sc,rr*sc,0,0,7); else { g.moveTo(pts[0]*sc,pts[1]*sc); for(let i=2;i<pts.length;i+=2) g.lineTo(pts[i]*sc,pts[i+1]*sc); g.closePath(); } };
+  shape(1.06); g.fillStyle=RIM.s; g.fill(); shape(1.02); g.fillStyle=RIM.l; g.fill();
+  shape(.97); g.fillStyle=IN.m; g.fill();
+  g.save(); shape(.97); g.clip();
+    P([-90,-90, -10,-90, -30,90, -90,90],IN.s); P([20,-90, 90,-90, 90,90, 40,90],IN.l);     // curvatura: lado esquerdo na sombra, direito na luz
+    P([-90,-90, -40,-90, -60,90, -90,90],IN.d);
+    if(!metal){ for(let x=-40;x<44;x+=10){ LN([x,-80, x+2,80],IN.d,.9); LN([x+1.2,-80, x+3.2,80],IN.l,.4); } for(let k2=0;k2<14;k2++){ const x=-36+((k2*37)%72), y=-40+((k2*53)%80); LN([x,y, x+1,y+6],IN.s,.5); } }
+    else { for(let y=-50;y<60;y+=16) LN([-60,y, 60,y+2],IN.s,.6); }
+    // reforço de ferro atravessado atrás
+    R(-60,-30,120,5,RIM.s); R(-60,-30,120,1.4,RIM.h); for(let x=-30;x<=30;x+=20) E(x,-27.5,1.3,1.3,RIM.h);
+  g.restore();
+  // rebites na borda
+  if(round){ for(let a=0;a<6.28;a+=.42) E(Math.cos(a)*rr*.8,Math.sin(a)*rr*.94,1.1,1.1,RIM.h); }
+  else for(let i=0;i<pts.length;i+=2){ const j=(i+2)%pts.length; for(let t=.2;t<1;t+=.3) E((pts[i]+(pts[j]-pts[i])*t)*.93,(pts[i+1]+(pts[j+1]-pts[i+1])*t)*.93,1.1,1.1,RIM.h); }
+}
+// alças e braço por trás do escudo (desenhados por cima das tábuas)
+function shieldStraps(C,drawArm){ const strap=(x0,y0,x1,y1,w)=>{ const dx=x1-x0, dy=y1-y0, L=Math.hypot(dx,dy), nx=-dy/L*w/2, ny=dx/L*w/2;
+    P([x0+nx,y0+ny, x1+nx,y1+ny, x1-nx,y1-ny, x0-nx,y0-ny],LEATH.m); LN([x0+nx*.6,y0+ny*.6, x1+nx*.6,y1+ny*.6],LEATH.h,.6); LN([x0-nx*.7,y0-ny*.7, x1-nx*.7,y1-ny*.7],LEATH.d,.8);
+    for(let t=.06;t<1;t+=.08) R(x0+dx*t+nx*.75-.3,y0+dy*t+ny*.75-.3,.6,.6,'#c8a878');
+    for(const [x,y] of [[x0,y0],[x1,y1]]){ RR(x-3.4,y-3.4,6.8,6.8,1.2,BRASS.m); R(x-2.4,y-2.4,4.8,1.2,BRASS.h); E(x,y,1,1,BRASS.d); } };
+  strap(-26,-6,22,-12,7);                 // alça de mão (em cima)
+  if(drawArm) drawArm();                  // antebraço passando por baixo da braçadeira
+  strap(-30,22,26,18,9);                  // braçadeira (embaixo)
+}
 // arco (na mão esquerda) e besta
 function bowArt(pull,id){ const H=id==='longbow'||id==='composite_bow'?190:160, b=12+pull*18;
   g.lineCap='round'; g.strokeStyle=WOODR.d; g.lineWidth=8; g.beginPath(); g.moveTo(10,-H/2); g.quadraticCurveTo(-b,0,10,H/2); g.stroke();
@@ -181,7 +230,14 @@ function paintFrame(k,id,pose,pi,C,lw,lh,extra){
   g=cvs.getContext('2d'); g.setTransform(1,0,0,1,0,0); g.clearRect(0,0,W2,H2); g.imageSmoothingEnabled=false;
   const base=(x,y)=>[lw/2*SS+x*s*SS, H2+y*s*SS];
   // escudo na mão esquerda
-  if(C.shield&&k!=='bow'&&k!=='xbow'&&k!=='pole'&&k!=='staff'){ const sp=extra.shieldPose||[-150,-40,.12,1]; const [X,Y]=base(sp[0],sp[1]); g.save(); g.translate(X,Y); g.rotate(sp[2]); g.scale(s*SS*sp[3]*.95*1.5,s*SS*sp[3]*1.5); shieldArt(C.shield); g.restore(); }
+  if(C.shield&&k!=='bow'&&k!=='xbow'&&k!=='pole'&&k!=='staff'){ const sp=extra.shieldPose||[-150,-40,.12,1]; const [X,Y]=base(sp[0],sp[1]); g.save(); g.translate(X,Y); g.rotate(sp[2]); const z=s*SS*sp[3]*1.55; g.scale(z,z);
+    shieldBack(C.shield,C); shieldStraps(C,()=>forearm(-2,6,-70,120,10,15,C.B,C.brace));
+    g.save(); g.translate(-2,-9); g.rotate(-1.62); g.scale(-1.05,1.05); fist(C.S,C.G,C.gm); g.restore(); g.restore(); }
+  if(k==='cast'){ const st=extra.stage; // 0 baixo, 1 subindo, 2 à frente
+    const P0=[[-120,10,.15,1.25],[-80,-55,.08,1.12],[-36,-92,.02,.92]][st], sp=[.6,.85,1.15][st];
+    for(const side of [-1,1]){ const [X,Y]=base(P0[0]*-side*-1*(side),P0[1]); g.save(); g.translate(base(side*Math.abs(P0[0]),P0[1])[0],Y); const z=s*SS*Z*.9*P0[3]; g.scale(z,z); g.rotate(side*-P0[2]);
+      forearm(0,-1,side*30,95,9.5,14,C.B,C.brace); g.scale(side,1); handOpen(C.S,C.G,C.gm,sp); g.restore(); }
+    return finish(lw,lh); }
   if(k==='xbow'){ const [X,Y]=base(30,-128); g.save(); g.translate(X,Y); g.scale(s*SS*1.5,s*SS*1.5); xbowArt(extra.arrow!==false,extra.rec||0);
       const y0=(extra.rec||0)*8; forearm(-14,30+y0,-110,150,9,14,C.B,C.brace); g.save(); g.translate(-8,22+y0); g.rotate(-.2); g.scale(-1,1); fist(C.S,C.G,C.gm); g.restore();
       forearm(18,66+y0,110,180,9,14,C.B,C.brace); g.save(); g.translate(8,58+y0); g.rotate(.15); fist(C.S,C.G,C.gm); g.restore(); g.restore(); return finish(lw,lh); }
@@ -216,17 +272,22 @@ function finish(lw,lh){ const out=document.createElement('canvas'); out.width=lw
   for(let y=1;y<lh-1;y++) for(let x=1;x<lw-1;x++){ const i=y*lw+x; if(a[i]) continue; if(a[i-1]||a[i+1]||a[i-lw]||a[i+lw]){ const q=i*4; d[q]=22; d[q+1]=14; d[q+2]=10; d[q+3]=255; } }
   o.putImageData(id,0,0); return out; }
 // ---------- animação e desenho na tela ----------
-let atk=null, lastCd=0, alt=0, lastW='', swapT=0, cast=null, lastCast=0;
+let atk=null, lastCd=0, alt=0, lastW='', swapT=0, cast=null, lastCast=0, lastSpell=null;
+if(typeof castSpell==='function'){ const _cs=castSpell; castSpell=function(id){ lastSpell=id; return _cs.apply(this,arguments); }; }
+const spellCol=id=>{ id=id||''; if(/fire|ember|naphtha|flame|burn|fogo/.test(id)) return ['255,120,40','255,220,140']; if(/frost|cold|ice|gelo|tear/.test(id)) return ['80,170,255','220,240,255'];
+  if(/storm|nail|spark/.test(id)) return ['170,200,255','255,255,255']; if(/resin|mire|lime|dust|blind|bind/.test(id)) return ['150,180,60','230,240,160']; return ['240,190,70','255,246,200']; };
 function anim(k,gat){ if(gat) return 'chop'; if(k==='axe'||k==='mace'||k==='pick') return 'chop'; if(k==='pole'||k==='staff') return 'pthrust'; if(k==='dagger'||k==='wand') return 'thrust'; return alt?'slashB':'slashA'; }
-window.fpHandsDbg=()=>({atk,frames:Object.keys(frames).length});
+window.fpHandsDbg=()=>({atk,cast,frames:Object.keys(frames).length});
 window.fpHandsDraw=function(ctx,lw,lh,now,light){ if(!player||player.ghost) return false;
   const tool=gathering?(gathering.kind==='tree'?'hatchet':'pickaxe'):null, id=tool||player.weapon, k=kind(id), C=colors();
   const S=[id,lw,lh,C.S.m,C.G&&C.G.m,C.B.m,C.shield&&C.shield.kind,C.shield&&C.shield.col].join('|'); if(S!==sig){ sig=S; frames={}; }
   if(id!==lastW){ lastW=id; swapT=now; atk=null; }
   const cd=player.atkCd||0; if(cd>lastCd+.05){ alt^=1; const Wp=WEAPONS[player.weapon]||{}; atk={t0:now,dur:Math.max(300,Math.min(560,(Wp.cd||.5)*900)),a:anim(k)}; } lastCd=cd;
   if(atk&&now-atk.t0>atk.dur) atk=null;
-  let key, make;
-  if(k==='fists'){ let pr=[0,0]; if(atk){ const p=(now-atk.t0)/atk.dur, f=p<.35?p/.35:1-(p-.35)/.65, st=Math.round(f*3)/3; pr=(alt||C.shield)?[0,st]:[st,0]; }
+  const cc=player.castCd||0; if(cc>lastCast+.05) cast={t0:now,dur:640,col:spellCol(lastSpell||(WEAPONS[player.weapon]||{}).spell)}; lastCast=cc; if(cast&&now-cast.t0>cast.dur) cast=null;
+  let key, make, glow=null;
+  if(cast){ const p=(now-cast.t0)/cast.dur, st=p<.18?0:p<.34?1:p<.78?2:p<.9?1:0; key='cast'+st; make=()=>paintFrame('cast',id,null,0,C,lw,lh,{stage:st}); if(st===2) glow=cast.col; }
+  else   if(k==='fists'){ let pr=[0,0]; if(atk){ const p=(now-atk.t0)/atk.dur, f=p<.35?p/.35:1-(p-.35)/.65, st=Math.round(f*3)/3; pr=(alt||C.shield)?[0,st]:[st,0]; }
     key='fists'+pr.join(','); make=()=>paintFrame(k,id,null,0,C,lw,lh,{punch:pr}); }
   else if(k==='xbow'){ let rec=0, ld=true; if(atk){ const p=(now-atk.t0)/atk.dur; rec=p<.15?1:p<.3?.5:0; ld=p>.75; }
     key='xbow'+rec+ld; make=()=>paintFrame('xbow',id,null,0,C,lw,lh,{rec,arrow:ld}); }
@@ -243,6 +304,10 @@ window.fpHandsDraw=function(ctx,lw,lh,now,light){ if(!player||player.ghost) retu
   const walk=player.moving?Math.sin(player.phase||now/130):0, s=lh/270, swap=Math.min(1,(now-swapT)/260);
   const bx=Math.round(walk*4*s), by=Math.round((Math.abs(walk)*4+Math.sin(now/900)*1.5)*s+(1-swap)*90*s);
   const L=Math.max(.3,Math.min(1.05,light.b));
+  if(glow){ const cx=canvas.width/2, cy=canvas.height*(1-150/270), r=canvas.height*(.07+.012*Math.sin(now/45)); ctx.save(); ctx.globalCompositeOperation='lighter';
+    const gr=ctx.createRadialGradient(cx,cy,0,cx,cy,r*2.2); gr.addColorStop(0,`rgba(${glow[1]},1)`); gr.addColorStop(.35,`rgba(${glow[0]},.85)`); gr.addColorStop(1,`rgba(${glow[0]},0)`); ctx.fillStyle=gr; ctx.fillRect(cx-r*2.4,cy-r*2.4,r*4.8,r*4.8);
+    const px=Math.max(2,canvas.height/135|0); ctx.fillStyle=`rgba(${glow[1]},1)`; for(let i=0;i<10;i++){ const a=now/220+i*.63, d=r*(1.3+.5*Math.sin(now/90+i)); ctx.fillRect((cx+Math.cos(a)*d)|0,(cy+Math.sin(a)*d*.7)|0,px,px); } ctx.restore(); }
   ctx.save(); ctx.imageSmoothingEnabled=false; if(L<.98){ ctx.filter=`brightness(${L.toFixed(2)})${light.warm>.3?' sepia(.25)':''}`; }
-  ctx.drawImage(fr,0,0,lw,lh,bx*canvas.width/lw,by*canvas.height/lh,canvas.width,canvas.height); ctx.restore(); return true; };
+  ctx.drawImage(fr,0,0,lw,lh,bx*canvas.width/lw,by*canvas.height/lh,canvas.width,canvas.height); ctx.restore();
+  return true; };
 })();
