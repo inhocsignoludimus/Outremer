@@ -13,7 +13,7 @@ const MOBILE=(window.matchMedia&&matchMedia('(pointer:coarse)').matches)||Math.m
 const RAD=MOBILE?2:3;                  // pedaços (16x16) carregados em volta do jogador
 const FOGFAR=MOBILE?26:38;
 window.fpOn=()=>typeof camModeGet==='function'&&camModeGet()==='fp'&&typeof player!=='undefined'&&!!player&&!driving;
-let yaw=0, pitch=0; window.fpYaw=()=>yaw;
+let yaw=0, pitch=0; window.fpYaw=()=>yaw; window.fpSetYaw=a=>{ yaw=a; pitch=-.12; };
 // ---------- three.js ----------
 const fpcv=document.createElement('canvas'); fpcv.id='fpcv'; fpcv.style.cssText='position:fixed;left:0;top:0;width:100vw;height:100vh;image-rendering:pixelated;display:none;z-index:0';
 canvas.parentNode.insertBefore(fpcv,canvas); canvas.style.position=canvas.style.position||'fixed';
@@ -54,6 +54,57 @@ function objMat(o){ const w=o.w||1, h=o.h||1, k=o.type+'|'+(o.kind||'')+'|'+w+'x
   const cv=document.createElement('canvas'), sc=3, cw=w*16+8, chh=h*16+30; cv.width=cw*sc; cv.height=chh*sc; const g=cv.getContext('2d'); g.imageSmoothingEnabled=false; g.scale(sc,sc); g.translate(4,22);
   try{ drawObj(g,o,0,0,0); }catch(e){}
   const m=new THREE.SpriteMaterial({map:canvasTex(cv),alphaTest:.5}); tint.push(m); return objTex[k]={m,asp:cw/chh,hgt:chh/16*.9}; }
+// ---------- objetos em 3D de verdade (js/props3d.js: modelos do pacote PolygonSight) ----------
+const PROPKEY={counter:'counterA',display:'counterA',chest:'chest',keg:'keg',barrel:'keg',table:'table',workbench:'longtable',bed:'bed',hbed:'bed',chair:'chair',candle:'chandelier',lamp:'farol',
+  crate:'crate',storage:'crate',cauldron:'cauldron',anvil:'anvil',logs:'logs',campfire:'fire',tent:'tent',bedroll:'sleep',rack:'wstore',wrack:'wstore',tub:'water'};
+const U3=1/45, propGeo={}; let propMat=null;
+function b64(s,T){ const b=atob(s), a=new Uint8Array(b.length); for(let i=0;i<b.length;i++) a[i]=b.charCodeAt(i); return new T(a.buffer); }
+function getPropGeo(k){ if(propGeo[k]!==undefined) return propGeo[k]; const D=window.PROPS3D&&PROPS3D[k]; if(!D) return propGeo[k]=null;
+  const P=b64(D.p,Int16Array), N=b64(D.n,Int8Array), Uq=b64(D.u,Uint16Array), pos=new Float32Array(P.length), nor=new Float32Array(N.length), uv=new Float32Array(Uq.length);
+  for(let i=0;i<P.length;i++) pos[i]=P[i]*D.q; for(let i=0;i<N.length;i++) nor[i]=N[i]/127; for(let i=0;i<Uq.length;i++) uv[i]=Uq[i]/65535*2-.5;
+  const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.BufferAttribute(pos,3)); g.setAttribute('normal',new THREE.BufferAttribute(nor,3)); g.setAttribute('uv',new THREE.BufferAttribute(uv,2));
+  g.userData.sz=D.sz; return propGeo[k]=g; }
+function getPropMat(){ if(propMat) return propMat; const t=new THREE.Texture(); t.magFilter=THREE.NearestFilter; t.minFilter=THREE.LinearMipmapLinearFilter; t.wrapS=t.wrapT=THREE.RepeatWrapping;
+  return propMat=new THREE.MeshLambertMaterial({map:t}); }
+const sameAt=(x,y,t)=>{ if(x<0||y<0||x>=W||y>=H) return false; const q=objGrid[y*W+x]; return !!q&&q.type===t; };
+const wallAt=(x,y)=>x>=0&&y>=0&&x<W&&y<H&&(isWallT(map[y*W+x])||doors.has(y*W+x));
+function propSpec(o){ const k=PROPKEY[o.type]; if(!k) return null; const g=getPropGeo(k); if(!g) return null;
+  const sz=g.userData.sz, w=o.w||1, h=o.h||1; let rot=0;
+  // orientação: cama no comprimento; balcão alinhado com os vizinhos; móveis encostados viram as costas para a parede
+  if(k==='bed'||k==='sleep'){ if(w>h) rot=Math.PI/2; }
+  else if(k==='counterA'||k==='longtable'||k==='wstore'){ if(sameAt(o.x,o.y-1,o.type)||sameAt(o.x,o.y+1,o.type)) rot=Math.PI/2; else if(wallAt(o.x,o.y+1)) rot=Math.PI; else if(wallAt(o.x-1,o.y)&&!wallAt(o.x,o.y-1)) rot=Math.PI/2; else if(wallAt(o.x+1,o.y)&&!wallAt(o.x,o.y-1)) rot=-Math.PI/2; }
+  else { if(wallAt(o.x,o.y-1)) rot=0; else if(wallAt(o.x,o.y+1)) rot=Math.PI; else if(wallAt(o.x-1,o.y)) rot=Math.PI/2; else if(wallAt(o.x+1,o.y)) rot=-Math.PI/2; else rot=(C.hsh(o.x,o.y,7)*4|0)*Math.PI/2; }
+  const turned=Math.abs(Math.sin(rot))>.5, fx=turned?h:w, fz=turned?w:h, big=k==='chest'||k==='keg'?.85:1.1;
+  let sx, sy, sz2;
+  if(k==='counterA'){ sx=fx/sz[0]; sz2=Math.min(fz*.7,.75)/sz[2]; sy=U3*1.05; }                       // balcões encaixam lado a lado
+  else { const s=Math.min(U3*big, fx*.92/sz[0], fz*.92/sz[2]); sx=sy=sz2=s; }
+  return {k,g,rot,sx,sy,sz:sz2,w,h}; }
+function propMesh(o){ const P=propSpec(o); if(!P) return null; const m=new THREE.Mesh(P.g,getPropMat()); m.scale.set(P.sx,P.sy,P.sz); m.rotation.y=P.rot; m.position.set(o.x+P.w/2,0,o.y+P.h/2); return m; }
+// ---------- os mesmos modelos viram sprites na câmera isométrica (renderizados uma vez, como o UO fazia) ----------
+const ISOK=33.94, ISOY=(62/2.6)/29.39;   // px por quadrado na diagonal; achata a altura para bater com as paredes do jogo
+let isoR=null, isoScene=null, isoCam=null, isoTexOk=false;
+function isoInit(){ if(isoR) return true; try{ isoR=new THREE.WebGLRenderer({antialias:false,alpha:true,preserveDrawingBuffer:true}); }catch(e){ return false; }
+  isoR.setPixelRatio(1); isoR.setClearColor(0,0); isoScene=new THREE.Scene(); isoScene.add(new THREE.AmbientLight(0xffffff,.62)); const d=new THREE.DirectionalLight(0xfff4e0,.75); d.position.set(.9,1.3,.2); isoScene.add(d);
+  isoCam=new THREE.OrthographicCamera(-1,1,1,-1,-50,50); isoCam.position.set(1,.8165,1); isoCam.lookAt(0,0,0); isoCam.updateMatrixWorld(); return true; }
+{ const im=new Image(); im.onload=()=>{ const m=getPropMat(); m.map.image=im; m.map.needsUpdate=true; isoTexOk=true; }; im.src=window.PROPS3D_TEX||''; }
+const isoSprites={};
+function isoSprite(P){ const key=P.k+'|'+P.rot.toFixed(2)+'|'+P.sx.toFixed(4)+'|'+P.sz.toFixed(4)+'|'+P.w+'x'+P.h; if(isoSprites[key]) return isoSprites[key];
+  if(!isoTexOk||!isoInit()) return null;
+  const n=P.w+P.h, cw=Math.ceil(n*24+48), ch=Math.ceil(n*12+110), ax=cw/2, ay=ch-n*6-14;
+  isoR.setSize(cw,ch,false); const m=new THREE.Mesh(P.g,getPropMat()); m.scale.set(P.sx,P.sy*ISOY,P.sz); m.rotation.y=P.rot; isoScene.add(m);
+  isoCam.left=-ax/ISOK; isoCam.right=(cw-ax)/ISOK; isoCam.top=ay/ISOK; isoCam.bottom=-(ch-ay)/ISOK; isoCam.updateProjectionMatrix(); isoR.render(isoScene,isoCam); isoScene.remove(m);
+  const cv=document.createElement('canvas'); cv.width=cw; cv.height=ch; const g=cv.getContext('2d'); g.drawImage(isoR.domElement,0,0);
+  // bordas duras (sem meio-transparente) e contorno escuro de 1px, para casar com a arte do jogo
+  const id=g.getImageData(0,0,cw,ch), d=id.data, o2=new Uint8ClampedArray(d);
+  for(let q=3;q<d.length;q+=4) o2[q]=d[q]>100?255:0;
+  for(let y=1;y<ch-1;y++) for(let x=1;x<cw-1;x++){ const q=(y*cw+x)*4; if(o2[q+3]) continue; if(o2[q+7]||o2[q-1]||o2[q+cw*4+3]||o2[q-cw*4+3]){ d[q]=28; d[q+1]=20; d[q+2]=16; d[q+3]=200; } else d[q+3]=o2[q+3]; }
+  for(let q=3;q<d.length;q+=4) if(o2[q]) d[q]=255;
+  g.putImageData(id,0,0); return isoSprites[key]={cv,ax,ay}; }
+const SPRITE3D=new Set(['counter','display','chest','keg','barrel','table','workbench','bed','hbed','chair','crate','storage','anvil','logs','tent','bedroll','rack','wrack','tub','lamp']);
+if(typeof window.isoProp==='function'){ const _ip=window.isoProp, _ih=window.isoHasProp;
+  window.isoHasProp=t=>(SPRITE3D.has(t)&&isoTexOk)||_ih(t);
+  window.isoProp=function(g,toS,o,biome){ if(SPRITE3D.has(o.type)){ const P=propSpec(o), S=P&&isoSprite(P); if(S){ const [x,y]=toS(o.x+P.w/2,o.y+P.h/2); g.drawImage(S.cv,Math.round(x-S.ax),Math.round(y-S.ay)); return true; } }
+    return _ip(g,toS,o,biome); }; }
 // ---------- geometria juntada (poucas chamadas de desenho por pedaço) ----------
 function Acc(){ return {p:[],n:[],u:[]}; }
 function quad(A,a,b,c,d,nx,ny,nz,u0,v0,u1,v1){ // a,b,c,d em sentido anti-horário visto de fora
@@ -92,7 +143,7 @@ function buildChunk(cu,cv){
     if(o&&o.x===x&&o.y===y&&(o.type==='tree'||o.type==='pine'||o.type==='olive')){ const v=treeVariant(o), u0=v/TREEV.length, u1=(v+1)/TREEV.length, hh=4.4+C.hsh(x,y,2)*1.6, ww=hh*150/190, cx=x+.5, cz=y+.5, b=-.12;
       quad(treeAcc,[cx-ww/2,b,cz],[cx+ww/2,b,cz],[cx+ww/2,b+hh,cz],[cx-ww/2,b+hh,cz],0,0,1,u0,0,u1,1);
       quad(treeAcc,[cx,b,cz-ww/2],[cx,b,cz+ww/2],[cx,b+hh,cz+ww/2],[cx,b+hh,cz-ww/2],1,0,0,u0,0,u1,1); }
-    else if(o&&o.x===x&&o.y===y&&o.type!=='rug'){ const om=objMat(o), s=new THREE.Sprite(om.m); s.center.set(.5,0); s.scale.set(om.hgt*om.asp,om.hgt,1); s.position.set(o.x+(o.w||1)/2,0,o.y+(o.h||1)/2); grp.add(s);
+    else if(o&&o.x===x&&o.y===y&&o.type!=='rug'){ const pm=propMesh(o); if(pm) grp.add(pm); else { const om=objMat(o), s=new THREE.Sprite(om.m); s.center.set(.5,0); s.scale.set(om.hgt*om.asp,om.hgt,1); s.position.set(o.x+(o.w||1)/2,0,o.y+(o.h||1)/2); grp.add(s); }
       if(o.light) grp.userData.lights=(grp.userData.lights||[]).concat([[o.x+.5,o.y+.5]]); }
     if(doors.has(i)){ const alongX=isWallT(map[i-1])||isWallT(map[i+1]); const m=new THREE.Mesh(new THREE.BoxGeometry(alongX?1:.12,WH*.85,alongX?.12:1),MATC.door||(MATC.door=new THREE.MeshLambertMaterial({color:0x6a4628})));
       m.position.set(x+.5,WH*.425,y+.5); m.userData.door=i; grp.add(m); (grp.userData.doors=grp.userData.doors||[]).push(m); }
@@ -107,7 +158,7 @@ function buildChunk(cu,cv){
     const geo=new THREE.ExtrudeGeometry(sh,{depth:L+.6,bevelEnabled:false}), uv=geo.attributes.uv; for(let k=0;k<uv.count;k++) uv.setXY(k,uv.getX(k)*.6,uv.getY(k)*.6);
     const m=new THREE.Mesh(geo,roofMat()); if(alongX){ m.rotation.y=Math.PI/2; m.position.set(b.x-.3,WH,b.y+b.h/2); } else m.position.set(b.x+b.w/2,WH,b.y-.3); grp.add(m); }
   return grp; }
-function dropChunk(k){ const c=chunks.get(k); if(!c) return; scene.remove(c); c.traverse(o=>{ if(o.geometry) o.geometry.dispose(); if(o.isMesh&&o.material&&o.material.map&&!Object.values(MATC).includes(o.material)&&o.material!==treeMat){ o.material.map.dispose(); o.material.dispose(); } }); chunks.delete(k); }
+function dropChunk(k){ const c=chunks.get(k); if(!c) return; scene.remove(c); c.traverse(o=>{ if(o.geometry&&!o.geometry.userData.sz) o.geometry.dispose(); if(o.material===propMat) return; if(o.isMesh&&o.material&&o.material.map&&!Object.values(MATC).includes(o.material)&&o.material!==treeMat){ o.material.map.dispose(); o.material.dispose(); } }); chunks.delete(k); }
 function streamChunks(){ const pu=Math.floor(player.x/T/CK), pv=Math.floor(player.y/T/CK), want=[];
   for(let dv=-RAD;dv<=RAD;dv++) for(let du=-RAD;du<=RAD;du++){ const cu=pu+du, cv=pv+dv; if(cu<0||cv<0||cu*CK>=W||cv*CK>=H) continue; want.push([cu,cv,Math.hypot(du,dv)]); }
   want.sort((a,b)=>a[2]-b[2]);
