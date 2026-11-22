@@ -79,6 +79,9 @@ function propSpec(o){ const k=PROPKEY[o.type]; if(!k) return null; const g=getPr
   if(k==='counterA'){ sx=fx/sz[0]; sz2=Math.min(fz*.7,.75)/sz[2]; sy=U3*1.05; }                       // balcões encaixam lado a lado
   else { const s=Math.min(U3*big, fx*.92/sz[0], fz*.92/sz[2]); sx=sy=sz2=s; }
   return {k,g,rot,sx,sy,sz:sz2,w,h}; }
+const _v=new THREE.Vector3(), _nm=new THREE.Matrix3();
+function addProp(A,m){ m.updateMatrix(); _nm.getNormalMatrix(m.matrix); const g=m.geometry, P=g.attributes.position, N=g.attributes.normal, Uv=g.attributes.uv;
+  for(let i=0;i<P.count;i++){ _v.fromBufferAttribute(P,i).applyMatrix4(m.matrix); A.p.push(_v.x,_v.y,_v.z); _v.fromBufferAttribute(N,i).applyMatrix3(_nm).normalize(); A.n.push(_v.x,_v.y,_v.z); A.u.push(Uv.getX(i),Uv.getY(i)); } }
 function propMesh(o){ const P=propSpec(o); if(!P) return null; const m=new THREE.Mesh(P.g,getPropMat()); m.scale.set(P.sx,P.sy,P.sz); m.rotation.y=P.rot; m.position.set(o.x+P.w/2,0,o.y+P.h/2); return m; }
 // ---------- os mesmos modelos viram sprites na câmera isométrica (renderizados uma vez, como o UO fazia) ----------
 const ISOK=33.94, ISOY=(62/2.6)/29.39;   // px por quadrado na diagonal; achata a altura para bater com as paredes do jogo
@@ -125,7 +128,7 @@ function buildChunk(cu,cv){
     g.putImageData(im,0,0);
     const geo=new THREE.PlaneGeometry(CK,CK); geo.rotateX(-Math.PI/2); const m=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({map:canvasTex(cvs)})); m.position.set(X0+CK/2,0,Y0+CK/2); grp.add(m); }
   // paredes (só as faces que aparecem), rochas, cercas
-  const wallAcc={}, rockAcc=Acc(), fenceAcc=Acc(), treeAcc=Acc(); let rockBio=null;
+  const propAcc=Acc(), wallAcc={}, rockAcc=Acc(), fenceAcc=Acc(), treeAcc=Acc(); let rockBio=null;
   for(let y=Y0;y<Y0+CK;y++) for(let x=X0;x<X0+CK;x++){ if(x<1||y<1||x>=W-1||y>=H-1) continue; const i=y*W+x, t=map[i];
     if(isWallT(t)){ const k=mat[i]+'_'+(t===TL.WINDOW?1:0), A=wallAcc[k]||(wallAcc[k]=Acc()), x1=x+1, y1=y+1, h=WH;
       if(!isWallT(map[i+W])) quad(A,[x,0,y1],[x1,0,y1],[x1,h,y1],[x,h,y1],0,0,1,0,0,1,1);
@@ -143,7 +146,7 @@ function buildChunk(cu,cv){
     if(o&&o.x===x&&o.y===y&&(o.type==='tree'||o.type==='pine'||o.type==='olive')){ const v=treeVariant(o), u0=v/TREEV.length, u1=(v+1)/TREEV.length, hh=4.4+C.hsh(x,y,2)*1.6, ww=hh*150/190, cx=x+.5, cz=y+.5, b=-.12;
       quad(treeAcc,[cx-ww/2,b,cz],[cx+ww/2,b,cz],[cx+ww/2,b+hh,cz],[cx-ww/2,b+hh,cz],0,0,1,u0,0,u1,1);
       quad(treeAcc,[cx,b,cz-ww/2],[cx,b,cz+ww/2],[cx,b+hh,cz+ww/2],[cx,b+hh,cz-ww/2],1,0,0,u0,0,u1,1); }
-    else if(o&&o.x===x&&o.y===y&&o.type!=='rug'){ const pm=propMesh(o); if(pm) grp.add(pm); else { const om=objMat(o), s=new THREE.Sprite(om.m); s.center.set(.5,0); s.scale.set(om.hgt*om.asp,om.hgt,1); s.position.set(o.x+(o.w||1)/2,0,o.y+(o.h||1)/2); grp.add(s); }
+    else if(o&&o.x===x&&o.y===y&&o.type!=='rug'){ const pm=propMesh(o); if(pm) addProp(propAcc,pm); else { const om=objMat(o), s=new THREE.Sprite(om.m); s.center.set(.5,0); s.scale.set(om.hgt*om.asp,om.hgt,1); s.position.set(o.x+(o.w||1)/2,0,o.y+(o.h||1)/2); grp.add(s); }
       if(o.light) grp.userData.lights=(grp.userData.lights||[]).concat([[o.x+.5,o.y+.5]]); }
     if(doors.has(i)){ const alongX=isWallT(map[i-1])||isWallT(map[i+1]); const m=new THREE.Mesh(new THREE.BoxGeometry(alongX?1:.12,WH*.85,alongX?.12:1),MATC.door||(MATC.door=new THREE.MeshLambertMaterial({color:0x6a4628})));
       m.position.set(x+.5,WH*.425,y+.5); m.userData.door=i; grp.add(m); (grp.userData.doors=grp.userData.doors||[]).push(m); }
@@ -152,6 +155,7 @@ function buildChunk(cu,cv){
   const rm=toMesh(rockAcc,rockMat(rockBio||'p')); if(rm) grp.add(rm);
   const fm=toMesh(fenceAcc,MATC.fence||(MATC.fence=new THREE.MeshLambertMaterial({color:0x5a3e24}))); if(fm) grp.add(fm);
   const tm=toMesh(treeAcc,getTreeMat()); if(tm) grp.add(tm);
+  const pmm=toMesh(propAcc,getPropMat()); if(pmm) grp.add(pmm);
   // telhados de duas águas das construções que começam neste pedaço
   for(const b of buildings){ if(!b||b.x<X0||b.x>=X0+CK||b.y<Y0||b.y>=Y0+CK) continue;
     const alongX=b.w>=b.h, L=alongX?b.w:b.h, S=alongX?b.h:b.w, rh=Math.min(2.4,S*.45), sh=new THREE.Shape(); sh.moveTo(-S/2-.3,0); sh.lineTo(S/2+.3,0); sh.lineTo(0,rh); sh.lineTo(-S/2-.3,0);
