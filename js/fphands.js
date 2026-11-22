@@ -281,6 +281,7 @@ if(typeof castSpell==='function'){ const _cs=castSpell; castSpell=function(id){ 
 const spellCol=id=>{ id=id||''; if(/fire|ember|naphtha|flame|burn|fogo/.test(id)) return ['255,120,40','255,220,140']; if(/frost|cold|ice|gelo|tear/.test(id)) return ['80,170,255','220,240,255'];
   if(/storm|nail|spark/.test(id)) return ['170,200,255','255,255,255']; if(/resin|mire|lime|dust|blind|bind/.test(id)) return ['150,180,60','230,240,160']; return ['240,190,70','255,246,200']; };
 function anim(k,gat){ if(gat) return 'chop'; if(k==='axe'||k==='mace'||k==='pick') return 'chop'; if(k==='pole'||k==='staff') return 'pthrust'; if(k==='dagger'||k==='wand') return 'thrust'; return alt?'slashB':'slashA'; }
+window.__FPH={lastSpell:()=>lastSpell,weaponArt,shieldBack,shieldStraps,bowArt,xbowArt,kind,colors,ramp,setG:c=>{g=c;},LN,P,E,R,RR,STEEL,BRASS,WOODR,LEATH,IRONR,spellCol};
 window.fpHandsDbg=()=>({atk,cast,frames:Object.keys(frames).length});
 window.fpHandsDraw=function(ctx,lw,lh,now,light){ if(!player||player.ghost) return false;
   const tool=gathering?(gathering.kind==='tree'?'hatchet':'pickaxe'):null, id=tool||player.weapon, k=kind(id), C=colors();

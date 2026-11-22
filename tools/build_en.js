@@ -14,7 +14,7 @@ fs.mkdirSync(out, { recursive: true });
 let n = 0, miss = new Set();
 for (const f of fs.readdirSync(src)) {
   if (!f.endsWith('.js') || f === 'data3d.js') continue;
-  if (f === 'three.min.js' || f === 'props3d.js') { fs.copyFileSync(path.join(src, f), path.join(out, f)); continue; }
+  if (f === 'three.min.js' || f === 'props3d.js' || f === 'fphands_ph.js') { fs.copyFileSync(path.join(src, f), path.join(out, f)); continue; }
   const code = fs.readFileSync(path.join(src, f), 'utf8');
   const ast = acorn.parse(code, { ecmaVersion: 'latest' });
   const reps = [];
