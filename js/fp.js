@@ -144,7 +144,7 @@ function lighting(now){
   if(inDG) sky=new THREE.Color(0x080404);
   scene.background=sky; scene.fog.color.copy(sky); scene.fog.near=inDG?3:8; scene.fog.far=inDG?20:FOGFAR*(1-dk*.4);
   const day=inDG?.15:Math.max(.12,1-dk*.95); amb.intensity=.08+day*.6; sun.intensity=inDG?0:day*.75; sun.color=col(0xfff0d8,0xffa060,dusk);
-  const tc=new THREE.Color().setScalar(Math.min(1,.22+day*.8)); if(dusk>0) tc.lerp(new THREE.Color(1,.8,.6),dusk*.3); for(const m of tint) m.color.copy(tc);
+  const tc=new THREE.Color().setScalar(Math.min(1,.22+day*.8)); if(dusk>0) tc.lerp(new THREE.Color(1,.8,.6),dusk*.3); for(const m of tint) m.color.copy(tc); fpLight.b=Math.min(1.05,tc.r+((inDG||dk>.3)?.1:0)); fpLight.warm=(inDG||dk>.3)?1:dusk*.5;
   // tochas e lanternas por perto + a luz do herói
   const L=[]; for(const c of chunks.values()) for(const [x,y] of (c.userData.lights||[])) L.push([x,y]);
   const px=player.x/T, py=player.y/T; L.sort((a,b)=>Math.hypot(a[0]-px,a[1]-py)-Math.hypot(b[0]-px,b[1]-py));
@@ -152,7 +152,7 @@ function lighting(now){
     const s=L[k-1]; if(!s||dk<.2&&!inDG){ l.intensity=0; return; } l.position.set(s[0],1.8,s[1]); l.intensity=1.8*flick(now,k); l.distance=9; });
 }
 // ---------- quadro ----------
-let lowW=0, lowH=0;
+let lowW=0, lowH=0; const fpLight={b:1,warm:0};
 function size(){ const cssW=innerWidth, cssH=innerHeight, target=MOBILE?220:300; const z=cssH/target; const w=Math.round(cssW/z), h=Math.round(cssH/z);
   if(w!==lowW||h!==lowH){ lowW=w; lowH=h; R3.setSize(w,h,false); cam.aspect=w/h; cam.updateProjectionMatrix(); } }
 let target=null;
@@ -174,6 +174,7 @@ function fpFrame(now){
   // camada 2D por cima: mira, rótulos e efeitos de tela
   ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,canvas.width,canvas.height);
   const cw=canvas.width, ch=canvas.height, k=dpr;
+  if(window.fpViewDraw) try{ fpViewDraw(ctx,lowW,lowH,now,fpLight); }catch(e){ console.error(e); }
   ctx.fillStyle=target?'rgba(255,120,90,.95)':'rgba(255,240,200,.8)'; ctx.fillRect(cw/2-1*k,ch/2-7*k,2*k,14*k); ctx.fillRect(cw/2-7*k,ch/2-1*k,14*k,2*k);
   const v=new THREE.Vector3();
   const proj=(x,h,z)=>{ v.set(x,h,z).project(cam); if(v.z>1) return null; return [(v.x*.5+.5)*cw,(-v.y*.5+.5)*ch]; };
