@@ -968,7 +968,6 @@
 "nordeste": "northeast",
 "Câmera: Isométrica": "Camera: Isometric",
 "Câmera: Clássica": "Camera: Classic",
-"Câmera <select id=\"o-cam\"><option value=\"iso\">Isométrica (2.5D)</option><option value=\"classic\">Clássica (de cima)</option></select>": "Camera <select id=\"o-cam\"><option value=\"iso\">Isometric (2.5D)</option><option value=\"classic\">Classic (top-down)</option></select>",
 "Minimizar": "Minimize",
 "Menu": "Menu",
 "Chat": "Chat",
@@ -976,5 +975,8 @@
 "Largar no chão": "Drop on the ground",
 "vazia": "empty",
 "Mostrar janelas": "Show windows",
-"Esconder janelas": "Hide windows"
+"Esconder janelas": "Hide windows",
+"Câmera <select id=\"o-cam\"><option value=\"iso\">Isométrica (2.5D)</option><option value=\"fp\">Primeira pessoa (3D)</option><option value=\"classic\">Clássica (de cima)</option></select>": "Camera <select id=\"o-cam\"><option value=\"iso\">Isometric (2.5D)</option><option value=\"fp\">First person (3D)</option><option value=\"classic\">Classic (top-down)</option></select>",
+"Câmera: Primeira pessoa": "Camera: First person",
+"Este aparelho não tem 3D (WebGL). Usando a câmera isométrica.": "This device has no 3D (WebGL). Using the isometric camera."
 }

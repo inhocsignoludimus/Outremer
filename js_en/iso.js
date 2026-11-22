@@ -7,6 +7,7 @@
 const C=ISOC, TW=C.TW, TH=C.TH, WH=C.WH, CK=16; // ladrilhos por pedaço de chão
 let camMode; try{ camMode=localStorage.getItem('outremer_cam')||'iso'; }catch(e){ camMode='iso'; }
 window.isoOn=()=>camMode==='iso' && typeof player!=='undefined' && !!player && !driving;
+window.camModeGet=()=>camMode;
 window.setCam=function(m){ camMode=m; try{ localStorage.setItem('outremer_cam',m); }catch(e){} if(m!=='iso'){ try{ resize(); }catch(e){} } syncCamUI(); };
 // ---------- cor final (menos saturação, contraste leve, tom quente) ----------
 function grade(r,g,b){ const l=r*.3+g*.59+b*.11; r=l+(r-l)*.82; g=l+(g-l)*.82; b=l+(b-l)*.82;
@@ -254,10 +255,10 @@ if(typeof npcAt==='function'){ const _na=npcAt; npcAt=function(wx,wy){ if(!isoOn
 if(typeof dirtyChunks==='function'){ const _dc=dirtyChunks; dirtyChunks=function(x,y){ _dc(x,y);
   const kk=chunkKey(Math.floor(x/CK),Math.floor(y/CK)); floorCache.delete(kk); layers.delete(kk); itemsCache.delete(kk); for(let yy=y-2;yy<=y+2;yy++) for(let xx=x-2;xx<=x+2;xx++){ sCache.delete('w'+(yy*W+xx)); sCache.delete('r'+(yy*W+xx)); } }; }
 // ---------- opção de câmera ----------
-function syncCamUI(){ const s=document.getElementById('o-cam'); if(s) s.value=camMode; const b=document.getElementById('m-cam'); if(b) b.textContent=(camMode==='iso'?'Camera: Isometric':'Camera: Classic')+' (switch)'; }
+function syncCamUI(){ const s=document.getElementById('o-cam'); if(s) s.value=camMode; const b=document.getElementById('m-cam'); if(b) b.textContent=(camMode==='iso'?'Camera: Isometric':camMode==='fp'?'Camera: First person':'Camera: Classic')+' (switch)'; }
 const box=document.querySelector('#front-options .create-box');
-if(box){ const d=document.createElement('label'); d.className='opt'; d.innerHTML='Camera <select id="o-cam"><option value="iso">Isometric (2.5D)</option><option value="classic">Classic (top-down)</option></select>';
+if(box){ const d=document.createElement('label'); d.className='opt'; d.innerHTML='Camera <select id="o-cam"><option value="iso">Isometric (2.5D)</option><option value="fp">First person (3D)</option><option value="classic">Classic (top-down)</option></select>';
   const ref=box.querySelectorAll('label')[1]||null; box.insertBefore(d,ref); document.getElementById('o-cam').onchange=e=>setCam(e.target.value); }
-const mui=document.getElementById('m-ui'); if(mui){ const b=document.createElement('button'); b.className='mbtn'; b.id='m-cam'; mui.after(b); b.onclick=()=>setCam(camMode==='iso'?'classic':'iso'); }
+const mui=document.getElementById('m-ui'); if(mui){ const b=document.createElement('button'); b.className='mbtn'; b.id='m-cam'; mui.after(b); b.onclick=()=>setCam(camMode==='iso'?'fp':camMode==='fp'?'classic':'iso'); }
 syncCamUI();
 })();
