@@ -978,5 +978,12 @@
 "Esconder janelas": "Hide windows",
 "Câmera: Primeira pessoa": "Camera: First person",
 "Este aparelho não tem 3D (WebGL). Usando a câmera isométrica.": "This device has no 3D (WebGL). Using the isometric camera.",
-"Câmera <select id=\"o-cam\"><option value=\"iso\">Isométrica (2.5D)</option><option value=\"fp\">Primeira pessoa (3D)</option><option value=\"classic\">Clássica (de cima)</option></select>": "Camera <select id=\"o-cam\"><option value=\"iso\">Isometric (2.5D)</option><option value=\"fp\">First person (3D)</option><option value=\"classic\">Classic (top-down)</option></select>"
+"Câmera <select id=\"o-cam\"><option value=\"iso\">Isométrica (2.5D)</option><option value=\"fp\">Primeira pessoa (3D)</option><option value=\"classic\">Clássica (de cima)</option></select>": "Camera <select id=\"o-cam\"><option value=\"iso\">Isometric (2.5D)</option><option value=\"fp\">First person (3D)</option><option value=\"classic\">Classic (top-down)</option></select>",
+"O céu abre.": "The sky clears.",
+"Nuvens cobrem o céu.": "Clouds cover the sky.",
+"Começa a chover.": "It starts to rain.",
+"Uma tempestade se aproxima. Trovões ao longe.": "A storm is coming. Thunder in the distance.",
+"Uma neblina espessa desce.": "A thick fog rolls in.",
+"Começa a nevar.": "It starts to snow.",
+"Uma nevasca se aproxima.": "A blizzard is coming."
 }

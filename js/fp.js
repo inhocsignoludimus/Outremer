@@ -23,7 +23,37 @@ function init3(){ if(R3) return true;
   R3.setPixelRatio(1); scene=new THREE.Scene(); window.__fpScene=scene; scene.fog=new THREE.Fog(0x8aa6c0,8,FOGFAR);
   cam=new THREE.PerspectiveCamera(64,16/9,.05,120); amb=new THREE.AmbientLight(0xffffff,.55); scene.add(amb);
   sun=new THREE.DirectionalLight(0xfff0d8,.8); sun.position.set(-3,6,-2); scene.add(sun);
-  return true; }
+  makeSky(); return true; }
+// ---------- céu: cúpula em degradê, sol, lua, estrelas e nuvens (pixel art) ----------
+let sky=null;
+function pixTex(sz,fn){ const c=document.createElement('canvas'); c.width=c.height=sz; fn(c.getContext('2d'),sz); const t=new THREE.CanvasTexture(c); t.magFilter=t.minFilter=THREE.NearestFilter; t.generateMipmaps=false; return t; }
+function makeSky(){ const G=new THREE.Group(); G.renderOrder=-10;
+  const geo=new THREE.SphereGeometry(100,16,12); const cols=new Float32Array(geo.attributes.position.count*3); geo.setAttribute('color',new THREE.BufferAttribute(cols,3));
+  const dome=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.BackSide,fog:false,depthWrite:false})); G.add(dome);
+  const sunT=pixTex(32,(g,n)=>{ for(let y=0;y<n;y++) for(let x=0;x<n;x++){ const d=Math.hypot(x-15.5,y-15.5); if(d<7){ g.fillStyle=d<5?'#fffbe8':'#ffe9a8'; g.fillRect(x,y,1,1); } else if(d<15){ g.fillStyle=`rgba(255,230,160,${(1-(d-7)/8)*.35})`; g.fillRect(x,y,1,1); } } });
+  const sunS=new THREE.Sprite(new THREE.SpriteMaterial({map:sunT,fog:false,depthWrite:false,transparent:true})); sunS.scale.set(16,16,1); G.add(sunS);
+  const moonT=pixTex(32,(g,n)=>{ g.clearRect(0,0,n,n); for(let y=0;y<n;y++) for(let x=0;x<n;x++){ const d=Math.hypot(x-15.5,y-15.5); if(d<8){ const cr=((x*7+y*13)%11)<2; g.fillStyle=cr?'#b8bcc8':'#e8ecf4'; g.fillRect(x,y,1,1); } else if(d<14){ g.fillStyle=`rgba(200,215,255,${(1-(d-8)/6)*.22})`; g.fillRect(x,y,1,1); } } });
+  const moonS=new THREE.Sprite(new THREE.SpriteMaterial({map:moonT,fog:false,depthWrite:false,transparent:true})); moonS.scale.set(11,11,1); G.add(moonS);
+  const sp=[]; for(let i=0;i<500;i++){ const u=Math.random()*Math.PI*2, v=Math.random()*.95+.04, r=95; sp.push(Math.cos(u)*Math.cos(v*Math.PI/2)*r, Math.sin(v*Math.PI/2)*r, Math.sin(u)*Math.cos(v*Math.PI/2)*r); }
+  const sg=new THREE.BufferGeometry(); sg.setAttribute('position',new THREE.Float32BufferAttribute(sp,3));
+  const stars=new THREE.Points(sg,new THREE.PointsMaterial({color:0xffffff,size:1.6,sizeAttenuation:false,fog:false,transparent:true,depthWrite:false})); G.add(stars);
+  const ct=new THREE.CanvasTexture(window.WX_CLOUDS||document.createElement('canvas')); ct.wrapS=ct.wrapT=THREE.RepeatWrapping; ct.magFilter=THREE.NearestFilter; ct.minFilter=THREE.NearestFilter; ct.repeat.set(3,3);
+  const cl=new THREE.Mesh(new THREE.PlaneGeometry(360,360),new THREE.MeshBasicMaterial({map:ct,transparent:true,fog:false,depthWrite:false,side:THREE.DoubleSide})); cl.rotation.x=Math.PI/2; cl.position.y=14; G.add(cl);
+  const cl2=cl.clone(); cl2.material=cl.material.clone(); cl2.material.map=ct.clone(); cl2.material.map.needsUpdate=true; cl2.material.map.repeat.set(5,5); cl2.position.y=11; G.add(cl2);
+  for(const o of G.children) o.renderOrder=-10;
+  scene.add(G); sky={G,dome,geo,sunS,moonS,stars,cl,cl2}; }
+function updSky(now,top,hor,dk,inDG){ if(!sky) return; sky.G.visible=!inDG; if(inDG) return; sky.G.position.copy(cam.position);
+  const p=sky.geo.attributes.position, c=sky.geo.attributes.color; for(let i=0;i<p.count;i++){ const t=Math.max(0,Math.min(1,p.getY(i)/100)), k=Math.pow(t,.6); c.setXYZ(i,hor.r+(top.r-hor.r)*k,hor.g+(top.g-hor.g)*k,hor.b+(top.b-hor.b)*k); } c.needsUpdate=true;
+  const W_=window.WX||{cover:0}, a=(time-6)/12*Math.PI;                 // nasce no leste às 6h, se põe no oeste às 18h
+  const sd=new THREE.Vector3(Math.cos(a),Math.sin(a),.35).normalize(); sky.sunS.position.copy(sd).multiplyScalar(90); sky.sunS.material.opacity=Math.max(0,Math.min(1,sd.y*4+.3))*(1-W_.cover*.85); sky.sunS.visible=sd.y>-.1;
+  const md=sd.clone().negate(); md.z=-.3; md.normalize(); sky.moonS.position.copy(md).multiplyScalar(90); sky.moonS.visible=md.y>-.1; sky.moonS.material.opacity=Math.min(1,dk*1.4)*(1-W_.cover*.8);
+  sky.stars.material.opacity=Math.max(0,dk-.3)*1.5*(1-W_.cover); sky.stars.visible=sky.stars.material.opacity>.02; sky.stars.rotation.y=now/400000;
+  // nuvens: quantidade pela cobertura, cor pela luz do dia, andam com o vento
+  const lit=new THREE.Color().copy(hor).lerp(new THREE.Color(1,1,1),.55*(1-dk)), dark=new THREE.Color(.35,.37,.42).multiplyScalar(1-dk*.7);
+  const cc=lit.clone().lerp(dark,Math.max(0,W_.cover-.4)*1.4);
+  sky.cl.material.color.copy(cc); sky.cl.material.opacity=Math.min(1,.25+W_.cover*1.1); sky.cl2.material.color.copy(cc.clone().multiplyScalar(.85)); sky.cl2.material.opacity=Math.max(0,W_.cover-.45)*1.6;
+  const w=(W_.wind||.3); sky.cl.material.map.offset.set(now/1000*.004*w*3,now/1000*.0015); sky.cl2.material.map.offset.set(now/1000*.007*w*3,now/1000*.002);
+  sun.position.copy(sd).multiplyScalar(10); }
 function canvasTex(cv,rep){ const t=new THREE.CanvasTexture(cv); t.magFilter=THREE.NearestFilter; t.minFilter=THREE.NearestFilter; t.generateMipmaps=false; if(rep){ t.wrapS=t.wrapT=THREE.RepeatWrapping; } return t; }
 const biomeAt=(x,y)=>{ const r=regions[regionId[y*W+x]]; if(typeof DG!=='undefined'&&DG&&(inRect(DG.L1,x,y)||inRect(DG.L2,x,y))) return 'dg'; if(r&&(r.kind==='city'||r.kind==='town')) return 'city'; return (r&&r.biome)||'p'; };
 // ---------- texturas e materiais compartilhados ----------
@@ -220,9 +250,17 @@ const col=(a,b,t)=>new THREE.Color(a).lerp(new THREE.Color(b),t);
 function lighting(now){
   const dk=darkness(time), dusk=Math.max(0,1-Math.abs(time-18.3)/1.6), dawn=Math.max(0,1-Math.abs(time-6.2)/1.2);
   const inDG=typeof DG!=='undefined'&&DG&&(inRect(DG.L1,player.x/T|0,player.y/T|0)||inRect(DG.L2,player.x/T|0,player.y/T|0));
-  let sky=col(0x8aa6c0,0x0a0e1a,Math.min(1,dk*1.1)); if(dusk>0) sky.lerp(new THREE.Color(0xd08050),dusk*.55); if(dawn>0) sky.lerp(new THREE.Color(0xe0a080),dawn*.4);
-  if(inDG) sky=new THREE.Color(0x080404);
-  scene.background=sky; scene.fog.color.copy(sky); scene.fog.near=inDG?3:8; scene.fog.far=inDG?20:FOGFAR*(1-dk*.4);
+  const Wx=window.WX||{cover:0,fog:0,rain:0,flash:0};
+  // topo e horizonte do céu pela hora; nuvens deixam cinza; relâmpago clareia
+  let top=col(0x3a6aa8,0x03050c,Math.min(1,dk*1.1)), hor=col(0xa8c4dc,0x0c1220,Math.min(1,dk*1.1));
+  if(dusk>0){ hor.lerp(new THREE.Color(0xf08a4a),dusk*.75); top.lerp(new THREE.Color(0x5a4a7a),dusk*.5); }
+  if(dawn>0){ hor.lerp(new THREE.Color(0xf0b080),dawn*.6); top.lerp(new THREE.Color(0x6a7aa8),dawn*.4); }
+  const grey=new THREE.Color(.55,.58,.62).multiplyScalar(1-dk*.85); top.lerp(grey,Wx.cover*.8); hor.lerp(grey.clone().multiplyScalar(1.1),Wx.cover*.7);
+  if(Wx.fog>.05){ const fg=new THREE.Color(.72,.74,.78).multiplyScalar(1-dk*.8); hor.lerp(fg,Wx.fog*.8); top.lerp(fg,Wx.fog*.5); }
+  if(Wx.flash>0){ top.lerp(new THREE.Color(.85,.88,1),Wx.flash*.7); hor.lerp(new THREE.Color(.85,.88,1),Wx.flash*.7); }
+  let sky=hor.clone(); if(inDG) sky=new THREE.Color(0x080404);
+  scene.background=inDG?sky:null; if(!inDG) scene.background=hor; updSky(now,top,hor,dk,inDG);
+  scene.fog.color.copy(sky); scene.fog.near=inDG?3:(8-Wx.fog*6); scene.fog.far=inDG?20:FOGFAR*(1-dk*.4)*(1-Wx.fog*.65)*(1-Wx.rain*.25);
   const day=inDG?.15:Math.max(.12,1-dk*.95); amb.intensity=.08+day*.6; sun.intensity=inDG?0:day*.75; sun.color=col(0xfff0d8,0xffa060,dusk);
   const tc=new THREE.Color().setScalar(Math.min(1,.22+day*.8)); if(dusk>0) tc.lerp(new THREE.Color(1,.8,.6),dusk*.3); for(const m of tint) m.color.copy(tc); fpLight.b=Math.min(1.05,tc.r+((inDG||dk>.3)?.1:0)); fpLight.warm=(inDG||dk>.3)?1:dusk*.5;
   // tochas e lanternas por perto + a luz do herói
