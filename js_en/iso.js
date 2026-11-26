@@ -20,7 +20,7 @@ const biomeAt=(x,y)=>{ const r=(typeof regions!=='undefined'&&regionId)?regions[
 const MOBILE=(window.matchMedia&&matchMedia('(pointer:coarse)').matches)||Math.min(innerWidth,innerHeight)<500;
 const FR=MOBILE?2:1;               // chão em meia resolução no celular
 const floorCache=new Map(), FLOOR_MAX=MOBILE?28:48; let job=null, frameT0=0;
-window.isoFlush=()=>{ floorCache.clear(); job=null; if(typeof layers!=='undefined'){ layers.clear(); itemsCache.clear(); } };
+window.isoFlush=()=>{ floorCache.clear(); job=null; try{ sCache.clear(); }catch(e){} if(typeof layers!=='undefined'){ layers.clear(); itemsCache.clear(); } };
 const BUDGET=MOBILE?7:9;           // ms por quadro para montar chão e peças novas
 const overBudget=()=>performance.now()-frameT0>BUDGET;
 function chunkKey(cu,cv){ return cu*4096+cv; }
@@ -77,14 +77,18 @@ function doorImg(x,y,open){ return cacheGet('d'+(y*W+x)+(open?'o':'c'),()=>{ con
   const alongU=C.isPanel(map[i-1])||C.isPanel(map[i+1]);
   if(alongU) C.drawPanel(im,cw,ch,toS,x,y+.5,true,1,WH*.8,M,false,false); else C.drawPanel(im,cw,ch,toS,x+.5,y,false,1,WH*.8,M,false,false);
   g.putImageData(im,0,0); gradeCanvas(cv); return {cv,ax,ay}; }); }
-function rockImg(x,y){ return cacheGet('r'+(y*W+x),()=>{ const cw=TW*2+20, ch=150, ax=cw/2, ay=ch-TH-6;
+function l1Img(k,cx,cy){ const im=LOTE1.img[k], m=LOTE1.meta[k]; const cv=document.createElement('canvas'); cv.width=im.width; cv.height=im.height; cv.getContext('2d').drawImage(im,0,0); gradeCanvas(cv); return {cv,ax:m.ax+cx,ay:m.ay+cy}; }
+function rockImg(x,y){ if(window.LOTE1&&LOTE1.ready){ const k=LOTE1.rockKey(biomeAt(x,y),x,y); return cacheGet('R'+k,()=>l1Img(k,0,12)); }
+  return cacheGet('r'+(y*W+x),()=>{ const cw=TW*2+20, ch=150, ax=cw/2, ay=ch-TH-6;
   const cv=document.createElement('canvas'); cv.width=cw; cv.height=ch; const g=cv.getContext('2d');
   isoRock(g,localToS(ax,ay,x+.5,y+.5),x,y,biomeAt(x,y),true); gradeCanvas(cv); return {cv,ax,ay}; }); }
-function treeImg(o){ const bio=o.type==='pine'?'n':biomeAt(o.x,o.y), seed=(o.x*7+o.y*13)%40;
+function treeImg(o){ if(window.LOTE1&&LOTE1.ready){ const k=LOTE1.natKey(o,biomeAt(o.x,o.y)); if(k&&LOTE1.img[k]) return cacheGet('T'+k,()=>l1Img(k,0,12)); }
+  const bio=o.type==='pine'?'n':biomeAt(o.x,o.y), seed=(o.x*7+o.y*13)%40;
   return cacheGet('t'+o.type+bio+seed,()=>{ const cw=150, ch=190, cv=document.createElement('canvas'); cv.width=cw; cv.height=ch; const g=cv.getContext('2d');
     C.drawTree(g,75,184,seed*97+3,bio); gradeCanvas(cv); return {cv,ax:75,ay:184}; }); }
 const NOPROP={};
-function propImg(o){ return cacheGet('o'+o.x+','+o.y+o.type,()=>{ const w=o.w||1, h=o.h||1, cw=(w+h)*TW/2+60, ch=(w+h)*TH/2+130, ax=h*TW/2+30, ay=110;
+function propImg(o){ if(window.LOTE1&&LOTE1.ready){ const k=LOTE1.natKey(o,biomeAt(o.x,o.y)); if(k&&LOTE1.img[k]) return cacheGet('P'+k,()=>l1Img(k,0,0)); }
+  return cacheGet('o'+o.x+','+o.y+o.type,()=>{ const w=o.w||1, h=o.h||1, cw=(w+h)*TW/2+60, ch=(w+h)*TH/2+130, ax=h*TW/2+30, ay=110;
   const cv=document.createElement('canvas'); cv.width=cw; cv.height=ch; const g=cv.getContext('2d');
   const r=isoProp(g,localToS(ax,ay,o.x,o.y),o,biomeAt(o.x,o.y)); if(r!==true) return NOPROP; gradeCanvas(cv); return {cv,ax,ay}; }); }
 const ANIM_TYPES=new Set(['campfire','brazier','candle','hearth','moongate','fountain','orb','cauldron','corpse','carcass']);

@@ -14,6 +14,7 @@ const isWall=t=>t===TL.WALL||t===TL.WINDOW||t===TL.ROCK;
 const ROCKM={face:'#5e5650',line:'#3a3430',cap:'#4a4440',pat:'rock'};
 // ---------- cor do chão, pixel a pixel ----------
 function floorCol(t,U,V,i,biome){
+  if(window.LOTE1&&LOTE1.ready){ const lk=LOTE1.floorKey(t,biome); if(lk) return LOTE1.sample(lk,U,V); }
   const n=hsh(Math.floor(U*64),Math.floor(V*64),7), lo=vnoise(U*.7,V*.7,3), mid=vnoise(U*3,V*3,5);
   const fu=U-Math.floor(U), fv=V-Math.floor(V);
   switch(t){
