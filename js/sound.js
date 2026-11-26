@@ -14,8 +14,14 @@ function sndInit(){ if(SND.ctx) return; const AC=window.AudioContext||window.web
   const rev=c.createConvolver(), len=c.sampleRate*1.6, buf=c.createBuffer(2,len,c.sampleRate); for(let ch=0;ch<2;ch++){ const d=buf.getChannelData(ch); for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2.5); }
   rev.buffer=buf; SND.rev=c.createGain(); SND.rev.gain.value=.25; rev.connect(SND.master); SND.rev.connect(rev);
   SND.noise=c.createBuffer(1,c.sampleRate*2,c.sampleRate); const nd=SND.noise.getChannelData(0); for(let i=0;i<nd.length;i++) nd[i]=Math.random()*2-1; }
-addEventListener('pointerdown',()=>{ sndInit(); if(SND.ctx&&SND.ctx.state==='suspended') SND.ctx.resume(); },{capture:true});
-addEventListener('keydown',()=>{ sndInit(); if(SND.ctx&&SND.ctx.state==='suspended') SND.ctx.resume(); },{capture:true});
+// Destrava o som: no celular só touchend/click/pointerup contam como gesto (pointerdown de toque não conta),
+// então tentamos em todos, tocamos um buffer mudo e voltamos a tentar ao reabrir o app.
+function sndUnlock(){ sndInit(); const c=SND.ctx; if(!c) return;
+  if(c.state!=='running'){ try{ const p=c.resume(); if(p&&p.then) p.then(()=>{ if(c.state==='running') SND.unlocked=true; },()=>{}); }catch(e){} }
+  if(!SND.unlocked){ try{ const b=c.createBuffer(1,1,22050), s=c.createBufferSource(); s.buffer=b; s.connect(c.destination); s.start(0); }catch(e){}
+    if(c.state==='running') SND.unlocked=true; } }
+['pointerdown','pointerup','touchstart','touchend','mousedown','click','keydown'].forEach(ev=>addEventListener(ev,sndUnlock,{capture:true,passive:true}));
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&SND.ctx){ SND.unlocked=false; try{ SND.ctx.resume(); }catch(e){} } });
 function tone(f,dur,o={}){ const c=SND.ctx; if(!c) return; const t=(o.at||c.currentTime), os=c.createOscillator(), g=c.createGain();
   os.type=o.type||'triangle'; os.frequency.setValueAtTime(f,t); if(o.to) os.frequency.exponentialRampToValueAtTime(o.to,t+dur);
   const v=o.vol??.3; g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(v,t+(o.att||.01)); g.gain.exponentialRampToValueAtTime(.0005,t+dur);

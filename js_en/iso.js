@@ -15,11 +15,12 @@ function grade(r,g,b){ const l=r*.3+g*.59+b*.11; r=l+(r-l)*.82; g=l+(g-l)*.82; b
 function gradeCanvas(cv){ const g=cv.getContext('2d'), im=g.getImageData(0,0,cv.width,cv.height), d=im.data;
   for(let k=0;k<d.length;k+=4){ if(!d[k+3]) continue; const c=grade(d[k],d[k+1],d[k+2]); d[k]=c[0]; d[k+1]=c[1]; d[k+2]=c[2]; } g.putImageData(im,0,0); }
 const biomeAt=(x,y)=>{ const r=(typeof regions!=='undefined'&&regionId)?regions[regionId[y*W+x]]:null;
-  if(typeof DG!=='undefined'&&DG&&(inRect(DG.L1,x,y)||inRect(DG.L2,x,y))) return 'dg'; if(r&&(r.kind==='city'||r.kind==='town')) return 'city'; return (r&&r.biome)||'p'; };
+  if(typeof DG!=='undefined'&&DG&&inDGT(x,y)) return 'dg'; if(r&&(r.kind==='city'||r.kind==='town')) return 'city'; return (r&&r.biome)||'p'; };
 // ---------- pedaços de chão (16x16 ladrilhos), com sombras fixas já pintadas ----------
 const MOBILE=(window.matchMedia&&matchMedia('(pointer:coarse)').matches)||Math.min(innerWidth,innerHeight)<500;
 const FR=MOBILE?2:1;               // chão em meia resolução no celular
 const floorCache=new Map(), FLOOR_MAX=MOBILE?28:48; let job=null, frameT0=0;
+window.isoFlush=()=>{ floorCache.clear(); job=null; if(typeof layers!=='undefined'){ layers.clear(); itemsCache.clear(); } };
 const BUDGET=MOBILE?7:9;           // ms por quadro para montar chão e peças novas
 const overBudget=()=>performance.now()-frameT0>BUDGET;
 function chunkKey(cu,cv){ return cu*4096+cv; }
@@ -48,6 +49,7 @@ function jobStep(j){ const {w,h,cu,cv}=j, d=j.img.data, U0=cu*CK, V0=cv*CK, ox=C
     else if(C.isPanel(t)){ const X=x+.5, Y=y+.5; if(C.isPanel(map[i+1])) quad(X,Y,X+.5,Y); if(C.isPanel(map[i-1])) quad(X-.5,Y,X,Y); if(C.isPanel(map[i+W])) quad(X,Y,X,Y+.5); if(C.isPanel(map[i-W])) quad(X,Y-.5,X,Y); }
     const o=objGrid[i]; if(o&&!seen.has(o)){ seen.add(o); const [a,b]=toS(o.x+(o.w||1)/2,o.y+(o.h||1)/2);
       if(o.type==='tree'||o.type==='olive') sh(a+34,b+8,40,15); else if(o.type==='pine') sh(a+30,b+8,30,11); else if(o.type!=='rug') sh(a+8,b+3,14*(o.w||1),6*(o.h||1)); } }
+  if(window.sceneryFloor) try{ sceneryFloor(g,toS,U0,V0,CK,FR); }catch(e){}
   g.save(); g.globalAlpha=.38; if(!MOBILE) g.filter='blur(3px)'; g.drawImage(S,0,0); g.restore();
   floorCache.set(chunkKey(cu,cv),j.cvs); while(floorCache.size>FLOOR_MAX) floorCache.delete(floorCache.keys().next().value);
   return true; }
@@ -174,7 +176,7 @@ function chunkItems(cu,cv){ const k=chunkKey(cu,cv); let r=itemsCache.get(k); if
     if(t===TL.WALL||t===TL.WINDOW||t===TL.ROCK) r.stat.push({k:'w',x,y,d:x+y+1.95,rock:t===TL.ROCK});
     else if(t===TL.FENCE) r.stat.push({k:'f',x,y,d:x+y+1.9});
     if(doors.has(i)) r.dyn.push({k:'door',x,y,d:x+y+1.95});
-    const o=objGrid[i]; if(o&&o.x===x&&o.y===y){ const d=o.type==='rug'?-1e9:o.x+(o.w||1)+o.y+(o.h||1)-.6;
+    const o=objGrid[i]; if(o&&o.x===x&&o.y===y&&!o.lm){ const d=o.type==='rug'?-1e9:o.x+(o.w||1)+o.y+(o.h||1)-.6;
       if(BAKE_TREE.has(o.type)) r.stat.push({k:'t',o,d,tree:true}); else if(!ANIM_TYPES.has(o.type)&&isoHasProp(o.type)) r.stat.push({k:'o',o,d}); else r.dyn.push({k:'sprite',o,d}); } }
   r.stat.sort((a,b)=>a.d-b.d); itemsCache.set(k,r); return r; }
 // imagem + posição na tela (em coordenadas do buffer) de uma peça fixa
@@ -232,6 +234,7 @@ function isoRenderFrame(now){
     if(L&&L.done){ g.drawImage(L.cv,sx-LPX,sy-LPT); layersDrawn.push([L,sx,sy]); }
     else for(const it of chunkItems(cu,cv).stat) dyn.push(it);
     for(const it of chunkItems(cu,cv).dyn) dyn.push(it); }
+  if(window.lmIsoItems) try{ for(const it of lmIsoItems(W2S,bw,bh)) dyn.push(it); }catch(e){}
   const near=e=>visible(e.x/T,e.y/T,120), ents=[];
   for(const n of npcs) if(!n.dead&&n.active&&near(n)) ents.push({k:'n',e:n,d:dep(n.x/T,n.y/T)});
   for(const r of raiders) if(near(r)) ents.push({k:'r',e:r,d:dep(r.x/T,r.y/T)});
@@ -248,6 +251,7 @@ function isoRenderFrame(now){
       try{ if(it.k==='n') drawNPC(g,e,0,0); else if(it.k==='r') drawRaider(g,e,0,0); else if(it.k==='a') drawAnimal(g,e,0,0); else drawPlayer(g,0,-(player.onTower?26:0)); }catch(err){}
       g.restore(); e.face=of; continue; }
     if(it.k==='door'){ const dr=doors.get(it.y*W+it.x); if(!dr||dr.open) continue; const im=doorImg(it.x,it.y,false); if(!im) continue; const [X,Y]=W2S((it.x+.5)*T,(it.y+.5)*T); g.drawImage(im.cv,X-im.ax,Y-im.ay); continue; }
+    if(it.k==='lm'){ try{ const r=lmIsoDraw(g,it.o,now,W2S,true); if(r){ const fade=it.d>pdep&&PX>r.x+r.w*.25&&PX<r.x+r.w*.75&&PY>r.y+r.h*.2&&PY<r.y+r.h-20; if(fade) g.globalAlpha=.42; g.drawImage(r.cv,r.x,r.y); g.globalAlpha=1; } lmIsoDraw(g,it.o,now,W2S,false); }catch(e){} continue; }
     if(it.k==='sprite'&&it.o.type==='hearth'){ try{ isoHearth(g,it.o,now); }catch(e){} continue; }
     if(it.k==='sprite'){ const o=it.o, w=o.w||1, h=o.h||1, [X,Y]=W2S((o.x+w/2)*T,(o.y+h)*T); g.save(); g.translate(Math.round(X-w*8*SCL),Math.round(Y-h*16*SCL)); g.scale(SCL,SCL); try{ drawObj(g,o,0,0,now); }catch(e){} g.restore(); continue; }
     // peça fixa de um pedaço ainda não assado

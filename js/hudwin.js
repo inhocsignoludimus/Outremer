@@ -29,21 +29,50 @@ const css=document.createElement('style'); css.textContent=`
   @media (pointer:coarse){ #hud-toggle{font-size:15px;padding:7px 14px} }
   body:not(.playing) #hud-toggle{display:none}
   body.hud-hidden #stats, body.hud-hidden #clock, body.hud-hidden #journal, body.hud-hidden #bag-gump{display:none!important}
+  #weap{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.25;min-height:1.25em}
+  /* celular deitado: tudo menor e sem janelas umas por cima das outras */
+  @media (max-height:520px){
+    #stats{width:168px!important;padding:3px 6px 4px 4px!important}
+    #stats .hw-bar{height:20px!important} #stats .hw-bar button,#clock .hw-bar button,#journal .hw-bar button{width:26px!important;height:18px!important;line-height:16px!important;font-size:15px!important}
+    #clock .hw-bar,#journal .hw-bar{height:20px!important}
+    #stats .stat{font-size:8px!important} #stats .bar{height:5px!important}
+    #weap{font-size:10px!important;margin-top:3px!important}
+    #clock{font-size:11px!important;padding:3px 6px!important;max-width:46vw}
+    #clock .hudbtns{max-width:min(250px,44vw)!important} #clock .hudbtns button{font-size:9px!important;padding:2px 5px!important}
+    #journal{width:min(330px,42vw)!important;font-size:10px!important}
+    #journal #jr-log{height:62px!important;font-size:10px!important}
+    #journal button,#journal [class*=tab]{font-size:9px!important;padding:1px 4px!important}
+    #hud-toggle{top:4px;left:50%;transform:translateX(-50%);writing-mode:horizontal-tb;font-size:11px!important;padding:3px 10px!important}
+    #toasts{top:30px!important}
+  }
 `; document.head.appendChild(css);
 
 // ---------- arrastar / minimizar ----------
+const COMPACT=()=>Math.min(innerWidth,innerHeight)<520;
+const WINS={};
+if(LS('layout')!==3){ ['stats','clock','journal','bag'].forEach(k=>{ const v=LS(k); if(v&&v.pos){ delete v.pos; delete v.min; LS(k,v); } }); LS('layout',3); }
+// mantém a janela inteira dentro da tela
+function fitWin(el){ const r=el.getBoundingClientRect(); if(!r.width) return; let x=r.left, y=r.top;
+  x=Math.min(Math.max(0,x),innerWidth-r.width); y=Math.min(Math.max(0,y),innerHeight-Math.min(r.height,innerHeight));
+  el.style.left=x+'px'; el.style.top=y+'px'; el.style.right='auto'; el.style.bottom='auto'; }
+addEventListener('resize',()=>setTimeout(()=>Object.values(WINS).forEach(fitWin),200));
 function makeWin(el,key,name,opts={}){
   if(!el||el.dataset.hw) return; el.dataset.hw=1;
   const bar=document.createElement('div'); bar.className='hw-bar'; bar.dataset.name=name; bar.innerHTML='<span class="hw-grip"></span><button title="Minimizar">–</button>';
   el.insertBefore(bar,el.firstChild);
   const btn=bar.querySelector('button');
-  const st=LS(key)||{}; const narrow=Math.min(innerWidth,innerHeight)<500 && innerWidth<innerHeight;
-  const setMin=m=>{ el.classList.toggle('hw-min',m); btn.textContent=m?'+':'–'; st.min=m; LS(key,st); if(opts.onMin) opts.onMin(m); };
+  const st=LS(key)||{}; const narrow=COMPACT(); WINS[key]=el;
+  const setMin=m=>{ const r0=el.getBoundingClientRect(), right=r0.width&&(r0.left+r0.width/2>innerWidth/2);
+    el.classList.toggle('hw-min',m); btn.textContent=m?'+':'–'; st.min=m; LS(key,st); if(opts.onMin) opts.onMin(m);
+    if(r0.width&&el.style.left){ if(right){ el.style.left='0px'; const r1=el.getBoundingClientRect(); el.style.left=(r0.right-r1.width)+'px'; } fitWin(el); }
+    // no celular, abrir uma janela fecha as outras do mesmo lado (não ficam empilhadas)
+    if(!m&&opts.group&&COMPACT()) Object.entries(WINS).forEach(([k,o])=>{ if(o!==el&&o._grp===opts.group&&!o.classList.contains('hw-min')) o._setMin(true); }); };
+  el._grp=opts.group; el._setMin=setMin;
   btn.addEventListener('pointerdown',e=>{ e.stopPropagation(); e.preventDefault(); setMin(!el.classList.contains('hw-min')); });
   const place=(x,y)=>{ const r=el.getBoundingClientRect(); x=Math.min(Math.max(0,x),innerWidth-Math.min(r.width,60)); y=Math.min(Math.max(0,y),innerHeight-24);
     el.style.left=x+'px'; el.style.top=y+'px'; el.style.right='auto'; el.style.bottom='auto'; };
-  if(st.pos) requestAnimationFrame(()=>place(st.pos[0],st.pos[1]));
-  else if(opts.defPos&&(narrow||opts.always)){ const t=setInterval(()=>{ if(!document.body.classList.contains('playing')) return; clearInterval(t); requestAnimationFrame(()=>{ const [x,y]=opts.defPos(); place(x,y); }); },300); }
+  if(st.pos) requestAnimationFrame(()=>{ place(st.pos[0],st.pos[1]); fitWin(el); });
+  else if(opts.defPos&&(narrow||opts.always)){ const t=setInterval(()=>{ if(!document.body.classList.contains('playing')) return; clearInterval(t); requestAnimationFrame(()=>{ const [x,y]=opts.defPos(); place(x,y); fitWin(el); }); },300); }
   if(st.min!=null) setMin(st.min); else if(opts.minNarrow&&narrow) setMin(true);
   const drag=e=>{ if(e.target===btn) return; e.preventDefault(); e.stopPropagation(); const r=el.getBoundingClientRect(), sx=e.clientX, sy=e.clientY; let moved=false;
     const mv=ev=>{ if(Math.abs(ev.clientX-sx)+Math.abs(ev.clientY-sy)>4) moved=true; place(r.left+ev.clientX-sx, r.top+ev.clientY-sy); };
@@ -54,8 +83,8 @@ function makeWin(el,key,name,opts={}){
   return {setMin};
 }
 makeWin(document.getElementById('stats'),'stats','Vida');
-makeWin(document.getElementById('clock'),'clock','Menu',{minNarrow:true,defPos:()=>[innerWidth-90,4]});
-const tryJournal=()=>{ const j=document.getElementById('journal'); if(j) makeWin(j,'journal','Chat',{minNarrow:true,defPos:()=>{ const r=document.getElementById('stats').getBoundingClientRect(); return [4,r.bottom+6]; }}); else setTimeout(tryJournal,500); }; tryJournal();
+makeWin(document.getElementById('clock'),'clock','Menu',{minNarrow:true,group:'r',onMin:m=>{ const b=document.getElementById('bag-gump'); if(b) b.style.visibility=(!m&&COMPACT()&&innerWidth>innerHeight)?'hidden':''; },defPos:()=>{ const r=document.getElementById('clock').getBoundingClientRect(); return [innerWidth-(r.width||90)-4,4]; }});
+const tryJournal=()=>{ const j=document.getElementById('journal'); if(j) makeWin(j,'journal','Chat',{minNarrow:true,group:'l',defPos:()=>{ const r=document.getElementById('stats').getBoundingClientRect(); return [4,r.bottom+6]; }}); else setTimeout(tryJournal,500); }; tryJournal();
 
 // botão único para esconder/mostrar todas as janelas
 const ht=document.createElement('div'); ht.id='hud-toggle'; document.getElementById('hud').appendChild(ht);
@@ -70,9 +99,9 @@ const tip=document.createElement('div'); tip.id='bag-tip'; document.getElementBy
 const cv=g0.querySelector('canvas'), g=cv.getContext('2d'); g.imageSmoothingEnabled=false;
 // posição padrão: canto de baixo à direita, acima dos botões de toque
 g0.style.left=(innerWidth-230)+'px'; g0.style.top=(innerHeight-260)+'px';
-makeWin(g0,'bag','Mochila',{always:true,defPos:()=>{ const small=innerWidth<760, w=small?166:222, port=innerWidth<innerHeight;
+makeWin(g0,'bag','Mochila',{always:true,minNarrow:innerWidth>innerHeight,group:'r',defPos:()=>{ const small=innerWidth<760||COMPACT(), w=g0.getBoundingClientRect().width||(small?166:222), port=innerWidth<innerHeight;
   if(port) return [innerWidth-w-4, innerHeight-450];
-  if(small){ const c=document.getElementById('clock').getBoundingClientRect(); return [innerWidth-w-4, c.bottom+4]; }
+  if(small){ const c=document.getElementById('clock').getBoundingClientRect(); return [innerWidth-w-4, c.bottom+6]; }
   return [innerWidth-w-8, innerHeight-260]; }});
 // arte da mochila (couro), pintada uma vez
 const art=document.createElement('canvas'); art.width=BW; art.height=BH;

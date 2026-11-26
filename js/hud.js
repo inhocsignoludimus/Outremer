@@ -96,7 +96,7 @@ function renderOnline(){
 // retrato: o rosto do seu personagem no canto
 const _updH = update;
 update = function(dt){ _updH(dt); if(!running||!player) return;
-  const w=document.getElementById('weap'); if(w){ const Wp=WEAPONS[player.weapon]; w.textContent=`${Wp?Wp.name:'Punhos'} · Armadura ${Math.round(totalArmor()*100)}%${player.guild?' · ['+player.guild+']':''}`; }
+  const w=document.getElementById('weap'); if(w){ const Wp=WEAPONS[player.weapon], t=`${Wp?Wp.name:'Punhos'}${Wp&&Wp.ranged&&Wp.ammo&&typeof countItem==='function'?' ('+countItem(Wp.ammo)+')':''} · Armadura ${Math.round(totalArmor()*100)}%${player.guild?' · ['+player.guild+']':''}`; if(w._t!==t){ w._t=t; w.textContent=t; } }
 };
 // o que você fala aparece em cima da sua cabeça
 const _dhH = drawHuman;

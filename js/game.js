@@ -259,7 +259,7 @@ function areaFree(x,y,w,h){
 // The world is authored on a coarse design grid; the game runs it at WS x that size so
 // houses, rooms, streets and rivers have room around the (unchanged) characters.
 const WS=1;
-const WORLD_VERSION = ()=> (window.WORLD.version||1)*10 + WS;
+const WORLD_VERSION = ()=> (window.WORLD.version||1)*10 + WS + (window.WORLD_ID===2?100:0);
 function scaledWorld(D){
   const s=WS, R=r=>({...r, x:r.x*s, y:r.y*s, w:r.w*s, h:r.h*s});
   const thin=r=>{ const o=R(r); if(r.w===1) o.w=1; if(r.h===1) o.h=1; return o; };
@@ -2560,7 +2560,8 @@ function render(now){
   const list=[]; const M=48;
   const vis=visibleChunks(1), seenB=new Set();
   for(const ci of vis){
-    for(const o of chunkObjs[ci]){ const sx=o.x*T-cx, sy=o.y*T-cy; if(sx>-M&&sx<bw+M&&sy>-M&&sy<bh+M) list.push({y:o.sortY,k:0,o,sx,sy}); }
+    for(const o of chunkObjs[ci]){ const sx=o.x*T-cx, sy=o.y*T-cy; if(o.lm?(sx>-220&&sx<bw+220&&sy>-80&&sy<bh+260):(sx>-M&&sx<bw+M&&sy>-M&&sy<bh+M)) list.push({y:o.sortY,k:0,o,sx,sy}); }
+  if(window.LM_LIST) for(const o of LM_LIST){ const sx=o.x*T-cx, sy=o.y*T-cy; if(sx>-220&&sx<bw+220&&sy>-80&&sy<bh+260&&!list.some(q=>q.o===o)) list.push({y:o.sortY,k:0,o,sx,sy}); }
     for(const d of chunkDoors[ci]){ const sx=d.x*T-cx, sy=d.y*T-cy; if(sx>-T&&sx<bw+T&&sy>-T&&sy<bh+HW+T) list.push({y:d.y*T+(d.gate?12:d.open?10:16),k:1,d,sx,sy}); }
     for(const b of chunkBlds[ci]){ if(seenB.has(b)) continue; seenB.add(b);
       const sx=b.x*T-2-cx, sy=b.y*T-6-HW-cy;
@@ -2772,7 +2773,7 @@ function updateHud(dt){
   document.getElementById('btn-atk').classList.toggle('on', attackHeld);
   const Wp=WEAPONS[player.weapon];
   const arm=Math.round(armorOf(player.equip)*100);
-  document.getElementById('weap').innerHTML = `<b>${Wp.name}</b>` + (Wp.ranged ? ` · ${countItem(Wp.ammo)} rds` : '') + (arm?`<br><small>Armour ${arm}%</small>`:'');
+  // (a linha da arma no status é escrita só em hud.js — duas escritas brigavam e o texto piscava)
   document.getElementById('hurt').style.opacity = Math.max(0, player.hurtT/.35) + (player.health<25 ? 0.25 : 0) + (crippled('head') ? 0.2 : 0);
 }
 

@@ -19,7 +19,7 @@ const BIO_ANIMALS = { p:[['rabbit',3],['deer',2],['horse',2],['sheep',2],['cow',
 const NATURAL = new Set([TL.GRASS,TL.FOREST,TL.FIELD,TL.SNOW,TL.DUNE,TL.SWAMP,TL.DIRT,TL.SAND,TL.RUBBLE]);
 spawnAnimal = function(){
   const ptx=Math.floor(player.x/T), pty=Math.floor(player.y/T);
-  for(let a=0;a<60;a++){ const ang=Math.random()*6.283, d=18+Math.random()*24, tx=Math.round(ptx+Math.cos(ang)*d), ty=Math.round(pty+Math.sin(ang)*d);
+  for(let a=0;a<60;a++){ const ang=Math.random()*6.283, d=14+Math.random()*20, tx=Math.round(ptx+Math.cos(ang)*d), ty=Math.round(pty+Math.sin(ang)*d);
     if(!inB(tx,ty)) continue; const i=idx(tx,ty); if(!walk[i]||bld[i]>=0||!NATURAL.has(map[i])||regionId[i]!==255) continue;
     const c=cellAt(tx,ty), pool=BIO_ANIMALS[c?c.b:'p']||BIO_ANIMALS.p; let t=pool.reduce((s,p)=>s+p[1],0)*Math.random(), kind=pool[0][0]; for(const [k,w] of pool){ t-=w; if(t<=0){ kind=k; break; } }
     const A=ANIMALS[kind]; animals.push({kind,x:tx*T+8,y:ty*T+12,hp:A.hp,face:Math.random()<.5?-1:1,phase:0,moving:false,state:'wander',t:Math.random()*3,vx:0,vy:0,hurtT:0,cd:0}); return true; }

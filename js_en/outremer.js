@@ -241,7 +241,10 @@ killRaider=function(r,ang){
 };
 // restos: ouro já vem junto ao revistar
 const _finishSearch=finishSearch;
-finishSearch=function(o){ if(o.type==='remains' && o.gold && !o.searched){ addItem('cash',o.gold); toast(`+${o.gold} gold coins`); } _finishSearch(o); };
+finishSearch=function(o){ if(o.type==='remains' && o.gold && !o.searched){ addItem('cash',o.gold); toast(`+${o.gold} gold coins`); }
+  // restos de monstro (mortos por você ou por outros jogadores) rendem espólio com mais constância
+  const L=o.type==='remains'&&LOOT[o.container], c0=L&&L.chance; if(L) L.chance=Math.max(c0||.55,.8);
+  try{ _finishSearch(o); } finally{ if(L) L.chance=c0; } };
 OBJ_NAMES.remains='Remains'; OBJ_NAMES.chest='Chest'; OBJ_NAMES.wrack='Weapon rack'; OBJ_NAMES.shelf='Bookshelf'; OBJ_NAMES.counter='Counter'; OBJ_NAMES.throne='Throne';
 // desenho dos monstros
 drawRaider=function(g,r,x,y){

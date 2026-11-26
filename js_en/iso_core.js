@@ -140,7 +140,7 @@ window.isoRender=function(cxT,cyT,opts={}){
   const Wc=1280, Hc=720, cv=document.createElement('canvas'); cv.width=Wc; cv.height=Hc; const g=cv.getContext('2d'); g.imageSmoothingEnabled=false;
   const ox=Wc/2-(cxT-cyT)*TW/2, oy=Hc/2-(cxT+cyT)*TH/2+(opts.dy||60);
   const toS=(U,V)=>[ox+(U-V)*TW/2, oy+(U+V)*TH/2];
-  const biomeAt=(x,y)=>{ const r=regions&&regionId?regions[regionId[y*W+x]]:null; if(typeof DG!=='undefined'&&(inRect(DG.L1,x,y)||inRect(DG.L2,x,y))) return 'dg'; if(r&&(r.kind==='city'||r.kind==='town')&&!opts.biome) return 'city'; return opts.biome||(r&&r.biome)||'p'; };
+  const biomeAt=(x,y)=>{ const r=regions&&regionId?regions[regionId[y*W+x]]:null; if(typeof DG!=='undefined'&&inDGT(x,y)) return 'dg'; if(r&&(r.kind==='city'||r.kind==='town')&&!opts.biome) return 'city'; return opts.biome||(r&&r.biome)||'p'; };
   // chão
   const img=g.createImageData(Wc,Hc), d=img.data;
   for(let Y=0;Y<Hc;Y++) for(let X=0;X<Wc;X++){ const a=(X-ox)/(TW/2), b=(Y-oy)/(TH/2), U=(a+b)/2, V=(b-a)/2, x=Math.floor(U), y=Math.floor(V);
@@ -348,6 +348,7 @@ const DEF={
 };
 let curToS=null; function isRockSmall(o,bi){ isoRock(G,curToS,o.x,o.y,bi,false); }
 window.isoHasProp=t=>!!DEF[t];
+window.isoDefine=(name,fn)=>{ DEF[name]=(o,b)=>fn(o,{box,cyl,blob,flame,poly,css,hex,G:()=>G,P:(U,V,z)=>P(U,V,z)},b); };
 window.isoProp=function(g,toS,o,biome){ G=g; curToS=toS; P=(U,V,z)=>{ const [a,b]=toS(U,V); return [a,b-(z||0)]; };
   const f=DEF[o.type]||(o.type==='shelf'?DEF.shelf:null); if(!f) return false; const r=f(o,biome); return r||true; };
 })();

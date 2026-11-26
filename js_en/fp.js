@@ -55,7 +55,7 @@ function updSky(now,top,hor,dk,inDG){ if(!sky) return; sky.G.visible=!inDG; if(i
   const w=(W_.wind||.3); sky.cl.material.map.offset.set(now/1000*.004*w*3,now/1000*.0015); sky.cl2.material.map.offset.set(now/1000*.007*w*3,now/1000*.002);
   sun.position.copy(sd).multiplyScalar(10); }
 function canvasTex(cv,rep){ const t=new THREE.CanvasTexture(cv); t.magFilter=THREE.NearestFilter; t.minFilter=THREE.NearestFilter; t.generateMipmaps=false; if(rep){ t.wrapS=t.wrapT=THREE.RepeatWrapping; } return t; }
-const biomeAt=(x,y)=>{ const r=regions[regionId[y*W+x]]; if(typeof DG!=='undefined'&&DG&&(inRect(DG.L1,x,y)||inRect(DG.L2,x,y))) return 'dg'; if(r&&(r.kind==='city'||r.kind==='town')) return 'city'; return (r&&r.biome)||'p'; };
+const biomeAt=(x,y)=>{ const r=regions[regionId[y*W+x]]; if(typeof DG!=='undefined'&&DG&&inDGT(x,y)) return 'dg'; if(r&&(r.kind==='city'||r.kind==='town')) return 'city'; return (r&&r.biome)||'p'; };
 // ---------- texturas e materiais compartilhados ----------
 const MATC={}, tint=[];  // materiais "básicos" que recebem a cor da luz do dia
 function wallMat(mi,win){ const k='w'+mi+(win?'w':''); if(MATC[k]) return MATC[k]; const M=MATS[mi]||MATS[6], S=32, cv=document.createElement('canvas'); cv.width=S; cv.height=S*2;
@@ -201,7 +201,7 @@ function buildChunk(cu,cv){
     if(o&&o.x===x&&o.y===y&&(o.type==='tree'||o.type==='pine'||o.type==='olive')){ const v=treeVariant(o), u0=v/TREEV.length, u1=(v+1)/TREEV.length, hh=4.4+C.hsh(x,y,2)*1.6, ww=hh*150/190, cx=x+.5, cz=y+.5, b=-.12;
       quad(treeAcc,[cx-ww/2,b,cz],[cx+ww/2,b,cz],[cx+ww/2,b+hh,cz],[cx-ww/2,b+hh,cz],0,0,1,u0,0,u1,1);
       quad(treeAcc,[cx,b,cz-ww/2],[cx,b,cz+ww/2],[cx,b+hh,cz+ww/2],[cx,b+hh,cz-ww/2],1,0,0,u0,0,u1,1); }
-    else if(o&&o.x===x&&o.y===y&&o.type!=='rug'){ if(o.type==='hearth'){ addHearth(grp,o); (grp.userData.lights=grp.userData.lights||[]).push([o.x+(o.w||1)/2,o.y+(o.h||1)/2]); } else { const pm=propMesh(o); if(pm) addProp(propAcc,pm); else { const om=objMat(o), s=new THREE.Sprite(om.m); s.center.set(.5,0); s.scale.set(om.hgt*om.asp,om.hgt,1); s.position.set(o.x+(o.w||1)/2,0,o.y+(o.h||1)/2); grp.add(s); } }
+    else if(o&&o.x===x&&o.y===y&&o.type!=='rug'&&!o.lm){ if(o.type==='hearth'){ addHearth(grp,o); (grp.userData.lights=grp.userData.lights||[]).push([o.x+(o.w||1)/2,o.y+(o.h||1)/2]); } else { const pm=propMesh(o); if(pm) addProp(propAcc,pm); else { const om=objMat(o), s=new THREE.Sprite(om.m); s.center.set(.5,0); s.scale.set(om.hgt*om.asp,om.hgt,1); s.position.set(o.x+(o.w||1)/2,0,o.y+(o.h||1)/2); grp.add(s); } }
       if(o.light) grp.userData.lights=(grp.userData.lights||[]).concat([[o.x+.5,o.y+.5]]); }
     if(doors.has(i)){ const alongX=isWallT(map[i-1])||isWallT(map[i+1]); const m=new THREE.Mesh(new THREE.BoxGeometry(alongX?1:.12,WH*.85,alongX?.12:1),MATC.door||(MATC.door=new THREE.MeshLambertMaterial({color:0x6a4628})));
       m.position.set(x+.5,WH*.425,y+.5); m.userData.door=i; grp.add(m); (grp.userData.doors=grp.userData.doors||[]).push(m); }
@@ -217,6 +217,7 @@ function buildChunk(cu,cv){
     const geo=new THREE.ExtrudeGeometry(sh,{depth:L+.6,bevelEnabled:false}), uv=geo.attributes.uv; for(let k=0;k<uv.count;k++) uv.setXY(k,uv.getX(k)*.6,uv.getY(k)*.6);
     const m=new THREE.Mesh(geo,roofMat()); if(alongX){ m.rotation.y=Math.PI/2; m.position.set(b.x-.3,WH,b.y+b.h/2); } else m.position.set(b.x+b.w/2,WH,b.y-.3); grp.add(m); }
   return grp; }
+window.fpFlush=()=>{ for(const k of [...chunks.keys()]) dropChunk(k); queue=[]; };
 function dropChunk(k){ const c=chunks.get(k); if(!c) return; scene.remove(c); c.traverse(o=>{ if(o.geometry&&!o.geometry.userData.sz) o.geometry.dispose(); if(o.material===propMat) return; if(o.isMesh&&o.material&&o.material.map&&!Object.values(MATC).includes(o.material)&&o.material!==treeMat){ o.material.map.dispose(); o.material.dispose(); } }); chunks.delete(k); }
 function streamChunks(){ const pu=Math.floor(player.x/T/CK), pv=Math.floor(player.y/T/CK), want=[];
   for(let dv=-RAD;dv<=RAD;dv++) for(let du=-RAD;du<=RAD;du++){ const cu=pu+du, cv=pv+dv; if(cu<0||cv<0||cu*CK>=W||cv*CK>=H) continue; want.push([cu,cv,Math.hypot(du,dv)]); }
@@ -249,7 +250,7 @@ const lights=[]; for(let k=0;k<(MOBILE?3:6);k++){ const l=new THREE.PointLight(0
 const col=(a,b,t)=>new THREE.Color(a).lerp(new THREE.Color(b),t);
 function lighting(now){
   const dk=darkness(time), dusk=Math.max(0,1-Math.abs(time-18.3)/1.6), dawn=Math.max(0,1-Math.abs(time-6.2)/1.2);
-  const inDG=typeof DG!=='undefined'&&DG&&(inRect(DG.L1,player.x/T|0,player.y/T|0)||inRect(DG.L2,player.x/T|0,player.y/T|0));
+  const inDG=typeof DG!=='undefined'&&DG&&inDGT(player.x/T|0,player.y/T|0);
   const Wx=window.WX||{cover:0,fog:0,rain:0,flash:0};
   // topo e horizonte do céu pela hora; nuvens deixam cinza; relâmpago clareia
   let top=col(0x3a6aa8,0x03050c,Math.min(1,dk*1.1)), hor=col(0xa8c4dc,0x0c1220,Math.min(1,dk*1.1));
@@ -288,6 +289,7 @@ function fpFrame(now){
   cam.rotation.order='YXZ'; cam.rotation.y=-yaw-Math.PI/2; cam.rotation.x=pitch;
   player.aimAng=yaw; if(typeof faceFromAng==='function') player.face=faceFromAng(yaw);
   pickTarget(); lighting(now); drawEnts(now); fireFrame(now);
+  if(window.lmFP) try{ lmFP(scene,cam,now); }catch(e){}
   R3.render(scene,cam);
   let vm3=false;
   // camada 2D por cima: mira, rótulos e efeitos de tela

@@ -16,7 +16,7 @@ const WX=window.WX={kind:'clear',next:'clear',t:1,cover:.05,rain:0,fog:0,dim:0,w
 let lastT=null, lastBolt=0;
 function pick(k){ const L=NEXT[k]; let s=L.reduce((a,b)=>a+b[1],0), r=Math.random()*s; for(const [n,w] of L){ if((r-=w)<0) return n; } return L[0][0]; }
 function biomeHere(){ try{ const x=player.x/T|0, y=player.y/T|0, r=regions[regionId[y*W+x]]; return (r&&r.biome)||'p'; }catch(e){ return 'p'; } }
-function inside(){ try{ const x=player.x/T|0, y=player.y/T|0; if(typeof DG!=='undefined'&&DG&&(inRect(DG.L1,x,y)||inRect(DG.L2,x,y))) return 'dg'; return (typeof bld!=='undefined'&&bld&&bld[idx(x,y)]>=0)?'house':''; }catch(e){ return ''; } }
+function inside(){ try{ const x=player.x/T|0, y=player.y/T|0; if(typeof DG!=='undefined'&&DG&&inDGT(x,y)) return 'dg'; return (typeof bld!=='undefined'&&bld&&bld[idx(x,y)]>=0)?'house':''; }catch(e){ return ''; } }
 function step(dtH,now){
   if(!KINDS[WX.kind]) WX.kind='clear'; if(!KINDS[WX.next]) WX.next=WX.kind; if(!(WX.timer>=0)) WX.timer=2; if(!(WX.t>=0)) WX.t=1;
   WX.timer-=dtH; if(WX.timer<=0){ WX.next=pick(WX.kind); WX.timer=1.5+Math.random()*3.5; WX.t=0;

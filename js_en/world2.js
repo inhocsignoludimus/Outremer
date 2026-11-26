@@ -119,11 +119,11 @@ monsterFor = function(){
 };
 let monT2=0;
 updateSpawns = function(dt){
-  monT2-=dt; if(monT2>0) return; monT2=2;
+  monT2-=dt; if(monT2>0) return; monT2=1.4;
   for(const r of [...raiders]) if(Math.hypot(r.x-player.x,r.y-player.y)>70*T) raiders.splice(raiders.indexOf(r),1);
   const i=idx(Math.floor(player.x/T),Math.floor(player.y/T)); if(regionId[i]!==255) return;
-  const c=cellAt(Math.floor(player.x/T),Math.floor(player.y/T)); const max=[2,4,6,8,10][Math.min(4,c?c.d||0:1)];
-  const near=raiders.filter(r=>Math.hypot(r.x-player.x,r.y-player.y)<45*T).length; if(near<max) spawnRaider(18,34);
+  const c=cellAt(Math.floor(player.x/T),Math.floor(player.y/T)); const max=[5,7,9,11,13][Math.min(4,c?c.d||0:1)];
+  const near=raiders.filter(r=>Math.hypot(r.x-player.x,r.y-player.y)<45*T).length; if(near<max) spawnRaider(15,30);
 };
 // povoados: lordes com o nome do lugar, padre em cada capela, guardas e moradores em cada um
 playerInCity = function(){ if(!player) return false; const r=regionAt(player.x,player.y); return !!r && (r.kind==='city'||r.kind==='town') && r.safe!==false && r.name!=='Southfarms'; };

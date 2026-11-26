@@ -44,7 +44,9 @@ killRaider = function(r,ang){ _kR(r,ang);
 const DG = { surf:{x:560,y:270,w:44,h:34}, L1:{x:90,y:1203,w:170,h:72}, L2:{x:320,y:1203,w:170,h:72} };
 const STAIRS = [];
 function inRect(r,x,y){ return x>=r.x&&x<r.x+r.w&&y>=r.y&&y<r.y+r.h; }
-function dungeonLevel(px,py){ const tx=Math.floor(px/T), ty=Math.floor(py/T); return inRect(DG.L1,tx,ty)?1:inRect(DG.L2,tx,ty)?2:0; }
+DG.more=[]; // salas subterrâneas extras do mapa novo: {x,y,w,h,lv,name}
+function dungeonLevel(px,py){ const tx=Math.floor(px/T), ty=Math.floor(py/T); if(inRect(DG.L1,tx,ty)) return 1; if(inRect(DG.L2,tx,ty)) return 2; for(const r of DG.more) if(inRect(r,tx,ty)) return r.lv; return 0; }
+function inDGT(x,y){ return inRect(DG.L1,x,y)||inRect(DG.L2,x,y)||DG.more.some(r=>inRect(r,x,y)); }
 function carveCave(R, seed, chasms){
   const rnd=mulberry32(seed), w=R.w, h=R.h; let g=new Uint8Array(w*h);
   for(let y=0;y<h;y++) for(let x=0;x<w;x++) g[y*w+x] = (x<3||y<3||x>=w-3||y>=h-3) ? 1 : rnd()<.46 ? 1 : 0;
@@ -119,11 +121,11 @@ BEAST.great_red = { ...BEAST.dragon_alpha, c:'#6a1208', s:4.2, e:'#ffcc40' }; MO
 OW.m_great_red_dragon = { ...OW.m_dragon_alpha, dmg:150, range:60 }; MONS.great_red_dragon.weapon='m_great_red_dragon';
 LOOT.mon_great_red_dragon = lootFrom('boss_serpe_de_fogo', true) || LOOT.mon_dragon_alpha; LOOT.mon_great_red_dragon.rolls=8;
 const DG_MONS = { 1:['skeleton','skeleton_archer','skeleton_knight','zombie','zombie_dark','goblin_elite','hobgoblin','skeleton_mage_fire'], 2:['skeleton_knight','skeleton_mage_fire','wyvern_fire','dragon_whelp','dragon_young','minotaur','skeleton_knight_boss'] };
-const _mfE = monsterFor; monsterFor = function(d){ const lv=player?dungeonLevel(player.x,player.y):0; if(lv) return rpick(DG_MONS[lv].filter(k=>MONS[k])); return _mfE(d); };
+const _mfE = monsterFor; monsterFor = function(d){ const lv=player?dungeonLevel(player.x,player.y):0; if(lv) return rpick((DG_MONS[lv]||DG_MONS[1]).filter(k=>MONS[k])); return _mfE(d); };
 let dgT=0;
 const _usE = updateSpawns;
 updateSpawns = function(dt){ const lv=dungeonLevel(player.x,player.y); if(!lv) return _usE(dt);
-  dgT-=dt; if(dgT>0) return; dgT=2.5; const near=raiders.filter(r=>Math.hypot(r.x-player.x,r.y-player.y)<30*T).length; if(near<(lv===1?7:9)) spawnRaider(10,22);
+  dgT-=dt; if(dgT>0) return; dgT=2.5; const near=raiders.filter(r=>Math.hypot(r.x-player.x,r.y-player.y)<30*T).length; const room=DG.more.find(r=>r.lv===lv), cap=room?room.cap||5:(lv===1?7:9); if(near<cap) spawnRaider(room?6:10,room?16:22);
   if(lv===2 && DG.hall && !raiders.some(r=>r.dungeonBoss) && !(player.dragonSlain && day-player.dragonSlain<3) && Math.hypot(player.x-DG.hall.x*T,player.y-DG.hall.y*T)<34*T){
     const r=spawnAt('great_red_dragon',DG.hall.x*T,DG.hall.y*T,{dungeonBoss:true,state:'chase',foe:player}); if(r){ toast('The ground shakes. From the depths of the hall, the GREAT RED DRAGON opens its eyes.'); shake=12; } } };
 // chefes dos covis: acordam quando você chega perto
@@ -133,6 +135,6 @@ update = function(dt){ _updE(dt); if(!running||!player||!SW||!SW.lairs) return;
     if(st.boss && !raiders.includes(st.boss)) st.boss=null;
     const d=Math.hypot(L.x*T-player.x,L.y*T-player.y); if(!st.boss && d<26*T && d>10*T) startLairBoss(L); }
 };
-const _wnE = wildName; wildName = function(){ const lv=player?dungeonLevel(player.x,player.y):0; if(lv) return lv===1?'Dragon\'s Lair · Level 1':'Dragon\'s Lair · Treasure Hall'; return _wnE(); };
+const _wnE = wildName; wildName = function(){ const lv=player?dungeonLevel(player.x,player.y):0; if(lv){ const room=DG.more.find(r=>r.lv===lv); if(room) return room.name; return lv===1?'Dragon\'s Lair · Level 1':'Dragon\'s Lair · Treasure Hall'; } return _wnE(); };
 const _serE = serialize; serialize = function(){ const s=_serE(); s.dragonSlain=player.dragonSlain||0; return s; };
 const _appE = applySave; applySave = function(s){ _appE(s); player.dragonSlain=s.dragonSlain||0; };

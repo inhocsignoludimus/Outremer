@@ -116,7 +116,7 @@ function animalAlert(x,y,radius){ for(const a of animals){ const d=Math.hypot(a.
 function updateAnimals(dt){
   animalT+=dt;
   const near=animals.filter(a=>Math.hypot(a.x-player.x,a.y-player.y)<60*T).length;
-  if(animalT>4){ animalT=0; if(near<9 && Math.random()<.8) spawnAnimal(); }
+  if(animalT>2.5){ animalT=0; if(near<14 && Math.random()<.9) spawnAnimal(); }
   for(const a of [...animals]){
     const A=ANIMALS[a.kind], dx=player.x-a.x, dy=player.y-a.y, d=Math.hypot(dx,dy);
     if(d>75*T){ animals.splice(animals.indexOf(a),1); continue; }
