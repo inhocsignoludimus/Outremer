@@ -91,5 +91,87 @@ function draw(now){ if(!cv) return; const g=cv.getContext('2d'), W=cv.width, H=c
     if(subEl) subEl.textContent=[rd&&rd.textContent,sx&&sx.textContent].filter(Boolean).join(' · '); }catch(err){} }
 function loop(now){ const sc=document.getElementById('screen-create'); if(sc&&sc.style.display!=='none'&&getComputedStyle(sc).display!=='none'){ if(!shown){ shown=true; face=0; t0=now; } if(mount()) draw(now); } else shown=false; requestAnimationFrame(loop); }
 requestAnimationFrame(loop);
+// ---- tela inicial pintada (Ludimus v2): arte de fundo, brasão, título em Cinzel dourado, plaquinhas do Lote 4 ----
+(function(){
+const st=document.createElement('style'); st.id='lote5-title'; st.textContent=`
+#screen-title{background:#0c0907!important;overflow:hidden!important}
+#screen-title::before{content:'';position:absolute;inset:-2%;background:url(${A5}tela_titulo_bg.jpg) 50% 50%/cover no-repeat;animation:ttPan 46s ease-in-out infinite alternate;z-index:0}
+#screen-title::after{content:'';position:absolute;inset:0;z-index:0;pointer-events:none;background:
+  linear-gradient(90deg,rgba(8,5,3,.82) 0%,rgba(8,5,3,.55) 24%,rgba(8,5,3,0) 46%),
+  radial-gradient(ellipse at 60% 40%,rgba(0,0,0,0) 45%,rgba(0,0,0,.55) 100%),
+  linear-gradient(rgba(0,0,0,0) 70%,rgba(0,0,0,.5))}
+@keyframes ttPan{from{transform:scale(1.02) translate(0,0)}to{transform:scale(1.08) translate(-1.2%,-.8%)}}
+#screen-title #title-art{display:none!important}
+#screen-title .title-box{position:absolute!important;z-index:2;left:max(3vw,24px)!important;top:50%!important;bottom:auto!important;transform:translateY(-50%)!important;width:min(440px,92vw)!important;
+  display:flex!important;flex-direction:column;align-items:center;background:none!important;border:0!important;box-shadow:none!important;padding:0!important;text-align:center}
+#screen-title .tt-crest{width:clamp(86px,19vh,150px);height:auto;display:block;margin:0 auto -4px;filter:drop-shadow(0 6px 10px rgba(0,0,0,.75)) drop-shadow(0 0 22px rgba(255,190,90,.28));animation:ttGlow 5s ease-in-out infinite alternate}
+@keyframes ttGlow{from{filter:drop-shadow(0 6px 10px rgba(0,0,0,.75)) drop-shadow(0 0 14px rgba(255,190,90,.18))}to{filter:drop-shadow(0 6px 10px rgba(0,0,0,.75)) drop-shadow(0 0 26px rgba(255,200,110,.42))}}
+#screen-title .game-title{display:block!important;margin:0!important;font-family:'Cinzel',serif!important;font-weight:700!important;font-size:clamp(38px,8.4vh,64px)!important;letter-spacing:.12em!important;white-space:nowrap;line-height:1.05!important;padding-left:.14em;
+  background:linear-gradient(180deg,#fff6d2 0%,#f3cf7e 38%,#b47a2c 58%,#e8bd6c 78%,#8a5a1e 100%);-webkit-background-clip:text;background-clip:text;color:transparent!important;-webkit-text-stroke:1px rgba(52,26,6,.55);
+  filter:drop-shadow(0 3px 0 #2a1608) drop-shadow(0 0 16px rgba(255,180,80,.32));text-shadow:none!important}
+#screen-title .tagline{display:block!important;font-family:'Cormorant Garamond',serif!important;font-style:italic;font-size:clamp(15px,2.4vh,19px)!important;color:#f1dfb8!important;text-shadow:0 2px 3px #000,0 0 10px rgba(0,0,0,.8);margin:4px 0 clamp(10px,2.6vh,22px)!important;white-space:nowrap}
+#screen-title .tagline::before,#screen-title .tagline::after{content:'';display:inline-block;width:26px;height:1px;vertical-align:middle;margin:0 8px;background:linear-gradient(90deg,transparent,#d7ae62)}
+#screen-title .tagline::after{background:linear-gradient(90deg,#d7ae62,transparent)}
+#screen-title .menu{display:flex!important;flex-direction:column!important;flex-wrap:nowrap!important;gap:clamp(5px,1.1vh,9px)!important;align-items:stretch!important;width:min(280px,86vw)}
+#screen-title .menu button{width:100%!important;min-width:0!important;margin:0!important;padding:clamp(7px,1.45vh,11px) 14px!important;border:6px solid transparent!important;border-image:url(${A4}plaquinha.png) 10 fill stretch!important;background:none!important;border-radius:0!important;
+  font-family:'Cinzel',serif!important;font-weight:700!important;font-size:clamp(14px,2.2vh,17px)!important;letter-spacing:.12em;color:#fff1cf!important;text-shadow:0 2px 0 #000,0 0 8px rgba(255,190,90,.35);filter:brightness(.95) saturate(.95);transition:filter .14s,transform .14s;cursor:pointer}
+#screen-title .menu button:hover,#screen-title .menu button:focus-visible{filter:brightness(1.22) saturate(1.1) drop-shadow(0 0 7px rgba(255,200,100,.6));transform:translateX(3px);outline:none}
+#screen-title .menu #t-new{font-size:clamp(15px,2.5vh,19px)!important;filter:brightness(1.08) saturate(1.1) drop-shadow(0 0 6px rgba(255,190,90,.35))}
+#screen-title .tt-lang{position:absolute;z-index:3;top:14px;right:16px;display:flex;gap:4px}
+#screen-title .tt-lang button{border:5px solid transparent;border-image:url(${A4}plaquinha.png) 10 fill stretch;background:none;font-family:'Cinzel',serif;font-weight:700;font-size:13px;letter-spacing:.1em;color:#e8d6ae;padding:4px 10px;cursor:pointer;filter:brightness(.7) saturate(.8)}
+#screen-title .tt-lang button.on{filter:brightness(1.2) drop-shadow(0 0 5px rgba(255,200,100,.6));color:#fff}
+#screen-title .studio-tag{z-index:3!important;position:absolute!important;bottom:10px!important;left:50%!important;transform:translateX(-50%);display:flex;align-items:center;gap:8px;white-space:nowrap;
+  font-family:'Cinzel',serif!important;font-size:11px!important;letter-spacing:.18em;color:rgba(240,220,180,.72)!important;text-shadow:0 1px 2px #000}
+#screen-title .studio-tag::before{content:'';width:22px;height:22px;background:url(assets/logo-seal.png) center/contain no-repeat;opacity:.85;filter:drop-shadow(0 0 6px rgba(255,140,80,.4))}
+#screen-title .front-pop{z-index:5;background:radial-gradient(ellipse at center,rgba(10,6,3,.55),rgba(0,0,0,.82))!important;backdrop-filter:blur(2px)}
+#front-options .create-box,#front-credits .create-box{background:linear-gradient(rgba(26,17,9,.32),rgba(10,6,3,.62)),url(${A4}couro.png) 0 0/128px repeat!important;
+  border:14px solid transparent!important;border-image:url(${A4}moldura.png) 22 round!important;background-clip:padding-box!important;box-shadow:0 10px 40px rgba(0,0,0,.85)!important}
+#screen-title .front-pop .create-box{width:min(560px,94vw)!important;max-height:92vh;overflow:auto;padding:16px 22px!important}
+#screen-title .front-pop h2{font-family:'Cinzel',serif!important;font-weight:700;color:#f0c878!important;letter-spacing:.14em;text-align:center;text-shadow:0 2px 0 #000;margin:0 0 10px!important}
+#screen-title .front-pop h2::after{content:'';display:block;height:1px;width:200px;margin:6px auto 0;background:linear-gradient(90deg,transparent,#d7ae62,transparent)}
+#front-options .opt{display:flex;align-items:center;gap:10px;color:#ecdcb8!important;font-family:var(--ui);margin:6px 0;padding:6px 10px;background:url(${A4}pergaminho.png) 0 0/200px;border:2px solid #6a4a22;color:#2a1a0c!important}
+#front-options select{background:#f3e5c2;color:#2a1a0c;border:1px solid #6a4a22;font-family:var(--ui);padding:2px 4px}
+#front-options .controls-help{color:#d8c49a!important;font-size:12px;line-height:1.45;margin-top:10px;background:rgba(0,0,0,.3);padding:8px 10px;border:1px solid rgba(215,174,98,.25)}
+#front-credits p{color:#e8d8b8!important;text-align:center}#front-credits b{color:#f0c878}
+#front-saves .slot canvas{background:radial-gradient(circle,rgba(255,220,150,.35),rgba(0,0,0,0) 70%)}
+#front-saves .slot .seg{font-family:'Cinzel',serif!important;font-weight:700}
+#front-saves .slot{height:auto!important;min-height:54px;width:100%!important;cursor:default;align-items:center!important;padding:6px 10px!important;box-sizing:border-box}
+#front-saves .slot>div{min-width:0}#front-saves .slot b{color:#2a1a0c!important;font-family:'Cinzel',serif;font-size:15px;line-height:1.2}#front-saves .slot small{display:block;line-height:1.25;color:#5a4024!important;font-size:12px}
+#front-saves .slot .seg{padding:5px 12px!important;font-size:13px!important;white-space:nowrap}
+#front-saves .slot.empty{opacity:.82;min-height:46px}
+@media (max-width:760px){ #front-saves .slot{flex-wrap:wrap!important;gap:6px 8px!important} #front-saves .slot>div{flex:1 1 55%!important} #front-saves .slot .seg{padding:4px 9px!important;font-size:12px!important} #front-saves .slot.empty>div{flex:1 1 40%!important} }
+#screen-title .front-pop .linkbtn{display:block;margin:10px auto 0!important;font-family:'Cinzel',serif;letter-spacing:.1em;color:#e2bd6e!important}
+@media (max-width:760px){
+  #screen-title::before{background-position:58% 50%}
+  #screen-title::after{background:linear-gradient(rgba(8,5,3,.72) 0%,rgba(8,5,3,.25) 30%,rgba(8,5,3,0) 48%,rgba(8,5,3,.35) 62%,rgba(8,5,3,.85) 100%)}
+  #screen-title .title-box{left:50%!important;top:0!important;bottom:0!important;transform:translateX(-50%)!important;justify-content:space-between;padding:58px 0 54px!important;width:92vw!important;height:100%;box-sizing:border-box}
+  #screen-title .tt-head{display:flex;flex-direction:column;align-items:center}
+  #screen-title .tt-crest{width:min(120px,30vw)}
+  #screen-title .game-title{font-size:min(52px,12.5vw)!important}
+  #screen-title .tagline{white-space:normal!important;font-size:15px!important}
+  #screen-title .menu{width:min(300px,80vw)}
+  #screen-title .menu button{padding:10px 14px!important;font-size:16px!important}
+}
+@media (min-width:761px){ #screen-title .tt-head{display:contents} }
+`;
+document.head.appendChild(st);
+function mountTitle(){ const sc=document.getElementById('screen-title'); if(!sc||sc.querySelector('.tt-crest')) return; const box=sc.querySelector('.title-box'); if(!box) return;
+  const head=document.createElement('div'); head.className='tt-head'; const img=new Image(); img.className='tt-crest'; img.alt=''; img.src=A5+'titulo_brasao.png'; head.appendChild(img);
+  const h1=box.querySelector('.game-title'), tg=box.querySelector('.tagline'); if(h1) head.appendChild(h1); if(tg) head.appendChild(tg); box.insertBefore(head,box.firstChild);
+  const cur=window.LANG||'pt', lg=document.createElement('div'); lg.className='tt-lang';
+  lg.innerHTML='<button data-l="pt" title="Português">PT</button><button data-l="en" title="English">EN</button>';
+  lg.querySelectorAll('button').forEach(b=>{ if(b.dataset.l===cur) b.classList.add('on'); b.onclick=()=>{ if(b.dataset.l!==cur&&typeof window.setLang==='function') window.setLang(b.dataset.l); }; });
+  sc.appendChild(lg); }
+// a arte antiga em pixel (dragão no canvas) não roda mais: o fundo pintado a substitui
+try{ if(typeof stopTitleArt==='function') stopTitleArt(); if(typeof startTitleArt==='function') window.startTitleArt=function(){}; }catch(e){}
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',mountTitle); else mountTitle();
+// retratos pintados (camadas do Lote 2) na lista de personagens, no lugar do bonequinho em pixel
+if(typeof renderSlots==='function'){ const _rs5=renderSlots; window.renderSlots=renderSlots=function(){ const r=_rs5.apply(this,arguments);
+  try{ const L2=window.LOTE2, M=L2&&L2.camadas&&L2.camadas.ready&&L2.camadas.meta&&L2.camadas.meta.corpo; if(!M||!L2.compose||!L2.dressOf) return r;
+    document.querySelectorAll('#front-saves canvas[data-i]').forEach(c=>{ const sv=readSlot(+c.dataset.i); if(!sv||!sv.look) return; let e=null; try{ e=L2.compose(L2.dressOf({look:sv.look,equip:sv.equip||{}})); }catch(x){ try{ e=L2.compose(L2.dressOf({look:sv.look})); }catch(y){} } if(!e||!e.cv) return;
+      c.width=60; c.height=84; c.style.width='45px'; c.style.height='63px'; const g=c.getContext('2d'); g.clearRect(0,0,60,84); g.imageSmoothingEnabled=false; const k=Math.min(60/M.cw,84/M.ch)*1.15;
+      g.save(); g.translate(30,80); g.scale(k,k); g.drawImage(e.cv,0,0,M.cw,M.ch,-M.ax,-M.ay,M.cw,M.ch); g.restore(); }); }catch(err){}
+  return r; }; }
+})();
 window.LOTE5UI={mount,draw};
 })();
