@@ -148,29 +148,71 @@ function setupColosso(){ const LM=window.LM_LIST||[]; const o=LM.find(q=>q.type=
     if(u>=-2&&v>=-2) continue; const i=idx(x,y); if(map[i]===T_('FOREST')) map[i]=TL.GRASS; if(typeof fden!=='undefined') fden[i]=0; const q=objGrid[i]; if(q&&NATURE.has(q.type)&&['tree','pine','palm','deadtree','bigtree'].includes(q.type)) removeObj(q); }
   COL.o=o; COL.ter=new Set(ter);
   SPECIAL.push({apply(h){ for(let y=ny-8;y<ny+14;y++) for(let x=nx-8;x<nx+16;x++) if(inb(x,y)) h[y*W+x]=0; for(const i of COL.ter) h[i]=1; }}); }
+// tira um objeto da natureza do chão sem apagá-lo (mesmo id) para replantá-lo noutro lugar
+function parkObj(o){ for(let dy=0;dy<o.h;dy++) for(let dx=0;dx<o.w;dx++){ const i=idx(o.x+dx,o.y+dy); if(objGrid[i]===o) objGrid[i]=null; }
+  try{ const L=chunkObjs[cidx(o.x,o.y)], k=L.indexOf(o); if(k>=0) L.splice(k,1); }catch(e){} }
+function dropObj(o,x,y){ o.x=x; o.y=y; o.sortY=(o.y+o.h)*T-2; for(let dy=0;dy<o.h;dy++) for(let dx=0;dx<o.w;dx++) objGrid[idx(x+dx,y+dy)]=o; try{ chunkObjs[cidx(x,y)].push(o); }catch(e){} }
 function setupCachoeira(){ const LM=window.LM_LIST||[]; const o=LM.find(q=>q.type==='cachoeira'); if(!o) return; CAC.o=null; CBLK.clear();
-  // v2 larga: maciço 10x11 a oeste do poço, com a face SE (11 ladrilhos) inteira de cortinas de água;
-  // o rio desce 5 ladrilhos de largura em 3 degraus até um poço largo
+  // v2 larga: maciço 10x11 com a face SE (11 ladrilhos) inteira de cortinas de água; rio largo em 3 degraus até um poço.
+  // geografia: o maciço é a frente de um ESCARPAMENTO (platô h=3 que desce em 2 e 1 nos flancos), com um lago de
+  // altitude e um rio de cima que vem das montanhas a noroeste e entra pela borda de trás da queda.
   const ox=o.x, oy=o.y, MW=10, MH=11, mx=ox-14, my=oy, S0=my+3, S1=my+9;
-  clearNat(mx-6,my-6,mx+MW+10,my+MH+6);
-  const DIRT=T_('DIRT'), RUB=T_('RUBBLE');
+  const DIRT=T_('DIRT'), RUB=T_('RUBBLE'), FOR=T_('FOREST');
+  const bag=[]; const park=q=>{ if(q&&q!==o&&NATURE.has(q.type)&&q.w===1&&q.h===1&&!bag.includes(q)){ parkObj(q); bag.push(q); return true; } return false; };
+  for(let y=my-6;y<=my+MH+6;y++) for(let x=mx-6;x<=mx+MW+10;x++){ if(!inb(x,y)) continue; const q=objGrid[idx(x,y)]; if(q&&NATURE.has(q.type)&&!park(q)) removeObj(q); }
   for(let y=oy-3;y<oy+3;y++) for(let x=ox-1;x<ox+7;x++) if(inb(x,y)&&(map[idx(x,y)]===TL.ROCK||map[idx(x,y)]===RUB)) map[idx(x,y)]=DIRT;
-  for(let y=my-2;y<my+MH+3;y++) for(let x=mx-3;x<mx+MW+8;x++){ if(!inb(x,y)) continue; const i=idx(x,y); if(map[i]===T_('FOREST')) map[i]=TL.GRASS; if(typeof fden!=='undefined') fden[i]=0; }
+  for(let y=my-2;y<my+MH+3;y++) for(let x=mx-3;x<mx+MW+8;x++){ if(!inb(x,y)) continue; const i=idx(x,y); if(map[i]===FOR) map[i]=TL.GRASS; if(typeof fden!=='undefined') fden[i]=0; }
   moveObj(o,mx,my,MW,MH,null); o.v5=1;
   for(let y=my;y<my+MH;y++) for(let x=mx;x<mx+MW;x++) map[idx(x,y)]=RUB;
-  // rio em degraus (3 colunas + a borda do poço), 5 ladrilhos de largura
-  const stream=[]; for(let y=S0;y<=S1;y++) for(let k=0;k<4;k++){ const x=mx+MW+k, i=idx(x,y); if(!inb(x,y)) continue; const q=objGrid[i]; if(q&&q!==o&&!NATURE.has(q.type)) continue; if(q&&q!==o) removeObj(q); map[i]=TL.WATER; stream.push([x,y]); }
-  // poço largo de mergulho
-  const pcx=mx+MW+8, pcy=(S0+S1)/2; for(let y=S0-6;y<=S1+6;y++) for(let x=mx+MW+4;x<=mx+MW+15;x++){ if(!inb(x,y)) continue; const e=((x-pcx)/6.6)**2+((y-pcy)/(6.4+(x<pcx?1.4:0)))**2; if(e>1) continue; const i=idx(x,y); if(map[i]===TL.WATER||map[i]===TL.SEA) continue; if(!dryT(x,y)) continue; const q=objGrid[i]; if(q&&!NATURE.has(q.type)) continue; if(q) removeObj(q); map[i]=TL.WATER; }
+  // ombros de rocha pintados dos dois lados (2 terraços e depois 1): o maciço vira a frente de uma serra, não um bolo solto
+  const SH=[]; for(const s of [{k:'g',x:mx+3,y:my-6,w:6,h:6,f:0},{k:'p',x:mx+5,y:my-10,w:4,h:4,f:1},{k:'g',x:mx+1,y:my+MH,w:6,h:6,f:1},{k:'p',x:mx,y:my+MH+6,w:4,h:4,f:0}]){
+    let ok=true; for(let y=s.y;y<s.y+s.h&&ok;y++) for(let x=s.x;x<s.x+s.w;x++){ if(!inb(x,y)||(!dryT(x,y)&&map[idx(x,y)]!==RUB)){ ok=false; break; } const q=objGrid[idx(x,y)]; if(q&&q!==o&&!NATURE.has(q.type)){ ok=false; break; } }
+    if(!ok) continue; for(let y=s.y;y<s.y+s.h;y++) for(let x=s.x;x<s.x+s.w;x++){ const i=idx(x,y), q=objGrid[i]; if(q&&q!==o&&!park(q)) removeObj(q); map[i]=RUB; if(typeof fden!=='undefined') fden[i]=0; CBLK.add(i); } SH.push(s); }
+  // ---- escarpamento: núcleo h=3; a frente recua (curva) longe da queda, a borda de trás encosta nas rochas a oeste
+  const yN=my-15, yS=my+MH+12, xB=mx-24;
+  const front=y=>{ if(y>=my&&y<my+MH) return mx+MW; if(y>=my-10&&y<my) return mx+8; if(y>=my+MH&&y<my+MH+6) return mx+6; if(y>=my+MH+6&&y<my+MH+10) return mx+3;
+    if(y<my-10) return mx+8-Math.floor((my-10-y)*.7+hsh(3,y,71)*1.4); return mx+3-Math.floor((y-(my+MH+9))*.7+hsh(3,y,71)*1.4); };
+  const core=(x,y)=>{ if(y<yN-(hsh(x,1,72)<.3?1:0)||y>yS+(hsh(x,2,73)<.3?1:0)) return false; if(x<xB-Math.round(hsh(y,4,74)*2)) return false; return x<=front(y); };
+  // ---- rio de cima + lago de altitude (h=3): da rocha a noroeste até a borda de trás do maciço
+  const UPW=new Set(); const wet=(x,y)=>{ if(!inb(x,y)) return; const i=idx(x,y); if(!dryT(x,y)&&map[i]!==TL.WATER) return; const q=objGrid[i]; if(q&&q!==o){ if(!NATURE.has(q.type)) return; if(!park(q)) removeObj(q); } if(q===o) return; map[i]=TL.WATER; if(typeof fden!=='undefined') fden[i]=0; UPW.add(i); };
+  const lx=mx-14, ly=my-11; // lago
+  for(let y=ly-5;y<=ly+5;y++) for(let x=lx-6;x<=lx+6;x++){ const e=((x-lx)/(4.6+hsh(y,5,75)*.6))**2+((y-ly)/(3.6+hsh(x,6,76)*.5))**2; if(e<=1) wet(x,y); }
+  const river=[]; for(let k=0;k<=13;k++){ const cx=mx-1-k, cy=my+2-k+Math.round(Math.sin(k*.8)*.7); wet(cx,cy); wet(cx,cy+1); river.push([cx,cy]); }
+  for(let k=1;k<=9;k++){ const cx=lx-4-k, cy=ly+Math.round(k*.55); if(inb(cx,cy)&&map[idx(cx,cy)]===TL.ROCK) break; wet(cx,cy); }
+  // vaus de pedra (caminháveis) para o platô não virar ilha: um escondido atrás do maciço e um no córrego que desce da rocha
+  const ford=(x,y)=>{ if(!inb(x,y)) return; const i=idx(x,y); if(!UPW.has(i)) return; UPW.delete(i); map[i]=RUB; };
+  { const [fx,fy]=river[1]; ford(fx,fy); ford(fx,fy+1); ford(fx,fy-1); ford(fx,fy+2); }
+  ford(lx-4-3,ly+Math.round(3*.55)); ford(lx-4-4,ly+Math.round(4*.55));
+  // margens: seixos e capim, sem areia (areia não sobe)
+  for(const i of UPW){ const x=i%W, y=(i/W)|0; for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){ const j=idx(x+dx,y+dy); if(UPW.has(j)||!dryT(x+dx,y+dy)||objGrid[j]) continue; if(hsh(x+dx,y+dy,77)<.35) map[j]=RUB; else if(map[j]===DIRT) map[j]=TL.GRASS; } }
+  // rio em degraus (3 colunas + a borda do poço), 7 ladrilhos de largura
+  const stream=[]; for(let y=S0;y<=S1;y++) for(let k=0;k<4;k++){ const x=mx+MW+k, i=idx(x,y); if(!inb(x,y)) continue; const q=objGrid[i]; if(q&&q!==o&&!NATURE.has(q.type)) continue; if(q&&q!==o&&!park(q)) removeObj(q); map[i]=TL.WATER; stream.push([x,y]); }
+  // poço largo de mergulho, que sai no rio de baixo
+  const pcx=mx+MW+8, pcy=(S0+S1)/2; for(let y=S0-6;y<=S1+6;y++) for(let x=mx+MW+4;x<=mx+MW+15;x++){ if(!inb(x,y)) continue; const e=((x-pcx)/6.6)**2+((y-pcy)/(6.4+(x<pcx?1.4:0)))**2; if(e>1) continue; const i=idx(x,y); if(map[i]===TL.WATER||map[i]===TL.SEA) continue; if(!dryT(x,y)) continue; const q=objGrid[i]; if(q&&!NATURE.has(q.type)) continue; if(q&&!park(q)) removeObj(q); map[i]=TL.WATER; }
+  for(let k=0;k<4;k++){ const y=Math.round(pcy+6+k), x=pcx+1; for(let dx=-1;dx<=1;dx++){ const xx=x+dx; if(inb(xx,y)&&dryT(xx,y)&&!objGrid[idx(xx,y)]) map[idx(xx,y)]=TL.WATER; } }
   // bordas de pedra dos dois lados do rio e sob a saia do maciço
   for(const y of [S0-1,S1+1]) for(let k=0;k<3;k++){ const x=mx+MW+k, i=idx(x,y); if(dryT(x,y)&&!objGrid[i]) map[i]=RUB; }
   for(const [dx,dy] of [[10,2],[11,2],[10,3],[11,3],[0,11],[1,11],[2,11],[3,11],[4,11],[5,11],[6,11],[1,12],[2,12],[3,12],[4,12]]){ const x=mx+dx, y=my+dy; if(!inb(x,y)) continue; const i=idx(x,y); if(map[i]===TL.WATER) continue; if(objGrid[i]&&!NATURE.has(objGrid[i].type)) continue; map[i]=RUB; CBLK.add(i); }
-  CAC.o=o; CAC.stream=stream; CAC.S0=S0; CAC.S1=S1; CAC.sx=mx+MW; CAC.pool=[pcx,pcy];
-  const band=y=>Math.max(0,my-y,y-(my+MH-1));
-  SPECIAL.push({apply(h){ for(let y=my-14;y<=my+MH+12;y++) for(let x=mx-14;x<=mx+MW+14;x++){ if(!inb(x,y)) continue; const i=y*W+x;
-      let v=x<=mx+MW?3:x===mx+MW+1?2:x===mx+MW+2?1:0; const d=band(y); if(d>2) v-=Math.ceil((d-2)/2); const dxx=mx-4-x; if(dxx>0) v-=Math.ceil(dxx/2);
-      v=Math.max(0,Math.min(3,v)); const t=map[i]; if(t===TL.SEA||(t===TL.WATER&&!(y>=S0&&y<=S1&&x>=mx+MW&&x<=mx+MW+2))||regionId[i]!==255) v=0; h[i]=v; } },
-    pin(h){ for(let y=S0;y<=S1;y++){ h[idx(mx+MW,y)]=3; h[idx(mx+MW+1,y)]=2; h[idx(mx+MW+2,y)]=1; h[idx(mx+MW+3,y)]=0; } for(let y=my;y<my+MH;y++) for(let x=mx;x<mx+MW;x++) h[idx(x,y)]=3; } }); }
+  // flancos: paredões em degraus com pedregulho (seixo no chão + as pedras replantadas) e pinheiros de altitude
+  const ring=[]; for(let y=yN-3;y<=yS+3;y++){ const f=front(y); for(let k=1;k<=2;k++){ const x=f+k; if(y>=S0-1&&y<=S1+1) continue; if(!inb(x,y)||!dryT(x,y)||objGrid[idx(x,y)]) continue; if(hsh(x,y,78)<.55) map[idx(x,y)]=RUB; ring.push([x,y]); } }
+  const flank=[]; const okT=(x,y)=>{ if(!inb(x,y)||!dryT(x,y)) return false; const i=idx(x,y); return !objGrid[i]&&!CBLK.has(i)&&!UPW.has(i)&&map[i]!==TL.WATER; };
+  // margens do rio de cima e do lago ficam abertas (e quem estiver na frente delas sai): o rio tem de aparecer chegando na queda
+  const nearUp=(x,y,r)=>{ for(let yy=y-r;yy<=y+r;yy++) for(let xx=x-r;xx<=x+r;xx++) if(inb(xx,yy)&&UPW.has(idx(xx,yy))) return true; return false; };
+  const veil=(x,y)=>nearUp(x,y,2)||nearUp(x-1,y-1,1)||nearUp(x-2,y-2,1)||nearUp(x-3,y-3,1)||(y<my&&x<mx+3&&x>=mx-3);
+  for(let y=my-26;y<=my+4;y++) for(let x=mx-26;x<=mx+4;x++){ if(!inb(x,y)) continue; const q=objGrid[idx(x,y)]; if(q&&q!==o&&NATURE.has(q.type)&&q.w===1&&q.h===1&&q.type!=='rock'&&q.type!=='brush'&&veil(x,y)){ if(!park(q)) removeObj(q); } }
+  for(let y=my-6;y<=my+MH+6;y++) for(let x=mx-6;x<=mx+MW;x++){ if(x>=mx&&x<mx+MW&&y>=my&&y<my+MH) continue; if(!core(x,y)||!okT(x,y)||veil(x,y)) continue;
+    const dN=my-y, dS=y-(my+MH-1), dW=mx-x; const near=Math.max(dN>0?dN:0,dS>0?dS:0,dW>0?dW:0); if(near<1||near>6) continue; flank.push([x,y,hsh(x,y,79)+near*.08]); }
+  flank.sort((a,b)=>a[2]-b[2]);
+  const rocks=bag.filter(q=>q.type==='rock'||q.type==='log'), trees=bag.filter(q=>!(q.type==='rock'||q.type==='log'));
+  let ri=0; for(const q of rocks){ while(ri<ring.length&&!okT(ring[ri][0],ring[ri][1])) ri++; if(ri>=ring.length){ removeObj(q); continue; } const [x,y]=ring[ri++]; dropObj(q,x,y); }
+  let fi=0; for(const q of trees){ let put=false; while(fi<flank.length){ const [x,y]=flank[fi++]; let gap=true; for(let yy=y-1;yy<=y+1&&gap;yy++) for(let xx=x-1;xx<=x+1;xx++){ const r=inb(xx,yy)&&objGrid[idx(xx,yy)]; if(r&&r!==o&&(xx!==x||yy!==y)){ gap=false; break; } } if(!gap||!okT(x,y)) continue; map[idx(x,y)]=TL.GRASS; dropObj(q,x,y); put=true; break; } if(!put) removeObj(q); }
+  CAC.o=o; CAC.stream=stream; CAC.S0=S0; CAC.S1=S1; CAC.sx=mx+MW; CAC.pool=[pcx,pcy]; CAC.UPW=UPW; CAC.lake=[lx,ly]; CAC.river=river; CAC.SH=SH;
+  const ST=new Set(stream.map(([x,y])=>idx(x,y)));
+  SPECIAL.push({apply(h){ for(let y=yN-4;y<=yS+4;y++) for(let x=xB-6;x<=mx+MW+6;x++){ if(!inb(x,y)) continue; const i=y*W+x;
+      let d=3; if(core(x,y)) d=0; else for(let r=1;r<3&&d===3;r++){ for(let yy=y-r;yy<=y+r&&d===3;yy++) for(let xx=x-r;xx<=x+r;xx++){ if((Math.abs(xx-x)===r||Math.abs(yy-y)===r)&&core(xx,yy)){ d=r; break; } } }
+      let v=3-d; const t=map[i]; if(v>0&&(t===TL.SEA||(t===TL.WATER&&!UPW.has(i)&&!ST.has(i))||(NOLIFT.has(t)&&!WETT.has(t))||regionId[i]!==255||(typeof bld!=='undefined'&&bld[i]>=0)||doors.has(i))) v=0;
+      if(v>h[i]||core(x,y)||d<3) h[i]=v; } },
+    pin(h){ for(const i of UPW) h[i]=3; for(const s of SH) for(let y=s.y;y<s.y+s.h;y++) for(let x=s.x;x<s.x+s.w;x++) h[idx(x,y)]=3; for(let y=S0;y<=S1;y++){ h[idx(mx+MW,y)]=3; h[idx(mx+MW+1,y)]=2; h[idx(mx+MW+2,y)]=1; h[idx(mx+MW+3,y)]=0; } for(let y=my;y<my+MH;y++) for(let x=mx;x<mx+MW;x++) h[idx(x,y)]=3; } }); }
 if(window.LMK&&LMK.DRESSX) LMK.DRESSX.push(function(){ SPECIAL=[]; try{ setupColosso(); }catch(e){ console.warn('lote5 colosso',e); } try{ setupCachoeira(); }catch(e){ console.warn('lote5 cachoeira',e); } });
 if(typeof buildWorld==='function'){ const _bw5=buildWorld; buildWorld=function(){ if(!ON2()) SPECIAL=[]; const r=_bw5.apply(this,arguments); try{ if(!ON2()){ COL.o=null; CAC.o=null; } computeElev(); }catch(e){ console.warn('lote5 relevo',e); R5.on=false; } try{ if(!ON2()){ HARB.length=0; HBLK.clear(); CBLK.clear(); } else if(typeof walk!=='undefined'){ for(const i of HBLK) walk[i]=0; for(const i of CBLK) walk[i]=0; } }catch(e){} return r; }; }
 
@@ -284,7 +326,7 @@ R5.zoomNow=()=>zoom;
 // =====================================================================
 // 6) LANDMARKS PINTADOS
 // =====================================================================
-const PAINT=['oratorio_pedra','oratorio_neve','oratorio_musgo','espada_rocha','arvore_mae','mastro','poco','arco_gelo','boca_mina','portao_ossos','fachada','ruina_cupula','ruina_torre','ruina_arco','ruina_catedral','colosso_v2','colosso_v2_tunel','colosso_v2_sombra','cachoeira_v2'];
+const PAINT=['oratorio_pedra','oratorio_neve','oratorio_musgo','espada_rocha','arvore_mae','mastro','poco','arco_gelo','boca_mina','portao_ossos','fachada','ruina_cupula','ruina_torre','ruina_arco','ruina_catedral','colosso_v2','colosso_v2_tunel','colosso_v2_sombra','cachoeira_v2','cac_ombro_g','cac_ombro_p'];
 const loadImg=src=>new Promise((res,rej)=>{ const im=new Image(); im.onload=()=>res(im); im.onerror=()=>{ R5.errors.push(src); rej(src); }; im.src=src; });
 fetch(B+'meta.json').then(r=>r.json()).then(m=>{ R5.meta=m; return Promise.all(PAINT.map(k=>loadImg(B+k+'.png').then(im=>{ R5.img[k]=k==='colosso_v2_sombra'?im:gradeCopy(im); }).catch(()=>{}))); })
   .then(()=>{ R5.ready=true; try{ if(window.isoFlush) isoFlush(); }catch(e){} }).catch(e=>{ R5.errors.push(String(e)); });
@@ -300,7 +342,7 @@ if(_lit) window.lmIsoItems=function(W2S,bw,bh){ if(!R5.ready) return _lit(W2S,bw
   if(COL.o){ const o=COL.o, [X,Y]=W2S(o.x*T,o.y*T); if(X>-700&&X<bw+700&&Y>-200&&Y<bh+760){ const ptx=player.x/T, pty=player.y/T, front=pty>=o.y+o.h||ptx>=o.x+o.w;
       out.push({k:'lm',o:{_r5:'colS',ref:o},d:-1e8+1}); out.push({k:'lm',o:{_r5:'colA',ref:o},d:-1e8+2}); out.push({k:'lm',o:{_r5:'colB',ref:o,front},d:front?pdep-.002:pdep+.002}); } }
   if(CAC.o){ const o=CAC.o, [X,Y]=W2S(o.x*T,o.y*T); if(X>-800&&X<bw+700&&Y>-300&&Y<bh+620){
-      out.push({k:'lm',o:{_r5:'cacM',ref:o},d:o.x+o.w+o.y+o.h-.6}); let sd=-1e9; for(const s of CAC.stream) sd=Math.max(sd,s[0]+s[1]); out.push({k:'lm',o:{_r5:'cacW',ref:o},d:sd+.6}); } }
+      out.push({k:'lm',o:{_r5:'cacM',ref:o},d:o.x+o.w+o.y+o.h-.6}); for(const sh of (CAC.SH||[])) out.push({k:'lm',o:{_r5:'cacS',ref:o,s:sh},d:sh.x+sh.w+sh.y+sh.h-.6}); let sd=-1e9; for(const s of CAC.stream) sd=Math.max(sd,s[0]+s[1]); out.push({k:'lm',o:{_r5:'cacW',ref:o},d:sd+.6}); } }
   try{ harbItems(W2S,bw,bh,out); }catch(e){}
   return out; };
 if(_lid) window.lmIsoDraw=function(g,o,now,W2S,first){
@@ -325,7 +367,14 @@ function drawSpecial(g,q,now,W2S){ const o=q.ref, M=R5.meta, [X,Y]=W2S(o.x*T,o.y
     if(!q.front&&typeof drawPlayer==='function'){ const [PX0,PY0]=W2S(player.x,player.y), PY=PY0-R5.entPx(player); const a=R5.img.colosso_v2;
       if(PX0>x0&&PX0<x0+a.width&&PY>y0&&PY-50<y0+a.height){ const inside=player.x/T>=o.x+3&&player.x/T<o.x+5&&player.y/T>=o.y+o.h-1.2; if(!inside||true){ g.save(); g.globalAlpha=.5; g.translate(Math.round(PX0),Math.round(PY)); g.scale(2,2); try{ drawPlayer(g,0,0); }catch(e){} g.restore(); } } }
     return; }
+  if(q._r5==='cacS'){ const s=q.s, k='cac_ombro_'+s.k, m=M[k], im=s.f?flipImg(k):R5.img[k]; if(!m||!im) return; const [SX,SY]=W2S(s.x*T,s.y*T), ax=s.f?im.width-m.ax:m.ax, x0=Math.round(SX-ax), y0=Math.round(SY-m.ay-pxAt(s.x,s.y));
+    // herói atrás do ombro: rocha fica translúcida
+    let al=1; try{ const ptx=player.x/T, pty=player.y/T; if(ptx+pty<s.x+s.y+s.w+s.h-1&&!(ptx>=s.x+s.w||pty>=s.y+s.h)){ const [PX0,PY0]=W2S(player.x,player.y), PY=PY0-R5.entPx(player); if(PX0>x0+10&&PX0<x0+im.width-10&&PY>y0&&PY-40<y0+im.height-30) al=.55; } }catch(e){}
+    g.save(); g.globalAlpha=al; g.drawImage(im,x0,y0); g.restore(); return; }
   if(q._r5==='cacM'){ const m=M.cachoeira_v2, sh=pxAt(o.x,o.y), x0=Math.round(X-m.ax), y0=Math.round(Y-m.ay-sh); g.drawImage(R5.img.cachoeira_v2,x0,y0);
+    // herói atrás do maciço: silhueta por cima (como no Colosso)
+    try{ const ptx=player.x/T, pty=player.y/T, a=R5.img.cachoeira_v2; if(typeof drawPlayer==='function'&&ptx+pty<o.x+o.y+o.w+o.h-1&&!(ptx>=o.x+o.w||pty>=o.y+o.h)){ const [PX0,PY0]=W2S(player.x,player.y), PY=PY0-R5.entPx(player);
+      if(PX0>x0+20&&PX0<x0+a.width-20&&PY>y0+10&&PY-50<y0+a.height){ g.save(); g.globalAlpha=.5; g.translate(Math.round(PX0),Math.round(PY)); g.scale(2,2); try{ drawPlayer(g,0,0); }catch(e){} g.restore(); } } }catch(e){}
     // cortinas de água correndo: listras que descem, recortadas pela máscara da água pintada
     const fx=cacFx(); if(fx){ const t=fx.tmp.getContext('2d'), w=fx.tmp.width, hh=fx.tmp.height; t.globalCompositeOperation='source-over'; t.clearRect(0,0,w,hh);
       const off=(now/9)%64; t.drawImage(fx.streak,0,Math.round(off-64)); t.globalCompositeOperation='destination-in'; t.drawImage(fx.mask,0,0); t.globalCompositeOperation='source-over';
@@ -346,7 +395,8 @@ function drawSpecial(g,q,now,W2S){ const o=q.ref, M=R5.meta, [X,Y]=W2S(o.x*T,o.y
       g.fillStyle=k%3?`rgba(236,250,250,${(.42+.25*Math.sin(a*2))*(1-r*.6)})`:`rgba(150,226,224,${.35+.2*Math.sin(a)})`; g.beginPath(); g.ellipse(ex+Math.sin(a)*3,ey+Math.cos(a*1.3)*1.5,7+Math.sin(a*1.7)*2.5,3,0,0,7); g.fill(); }
     if(!night()&&(typeof WX==='undefined'||WX.rain<.2)){ g.lineWidth=3; ['rgba(255,60,60,.2)','rgba(255,170,40,.2)','rgba(255,240,80,.2)','rgba(80,220,90,.2)','rgba(70,140,255,.2)','rgba(150,80,220,.2)'].forEach((c,k)=>{ g.strokeStyle=c; g.beginPath(); g.ellipse(bx-30,by-30,170-k*3.2,120-k*3.2,0,Math.PI*1.06,Math.PI*1.94); g.stroke(); }); g.lineWidth=1; }
     return; } }
-let CFX=null;
+let CFX=null; const FLIP={};
+function flipImg(k){ if(FLIP[k]) return FLIP[k]; const im=R5.img[k]; if(!im) return null; const c=document.createElement('canvas'); c.width=im.width; c.height=im.height; const g=c.getContext('2d'); g.translate(im.width,0); g.scale(-1,1); g.drawImage(im,0,0); FLIP[k]=c; return c; }
 function cacFx(){ if(CFX) return CFX.ok?CFX:null; const im=R5.img.cachoeira_v2; if(!im) return null; CFX={ok:false};
   try{ const w=im.width, h=im.height, c=document.createElement('canvas'); c.width=w; c.height=h; const g=c.getContext('2d'); g.drawImage(im,0,0); const d=g.getImageData(0,0,w,h), a=d.data;
     for(let i=0;i<a.length;i+=4){ const r=a[i], gg=a[i+1], b=a[i+2], on=a[i+3]>0&&b>175&&gg>170&&r>140&&b>=r-10; a[i]=a[i+1]=a[i+2]=255; a[i+3]=on?255:0; } g.putImageData(d,0,0);
