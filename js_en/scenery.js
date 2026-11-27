@@ -63,7 +63,7 @@ function dressTowns(){
       if(freeT(x-2,y)&&freeT(x-2,y+1)) addObj({type:'bench',x:x-2,y,h:2,solid:true});   // bancos de frente para o chafariz (de lado, não apontando para ele)
       if(freeT(x+3,y)&&freeT(x+3,y+1)) addObj({type:'bench',x:x+3,y,h:2,solid:true});
       for(const [a,b] of [[-3,-3],[4,-3],[-3,4],[4,4]]) if(freeT(x+a,y+b)) addObj({type:'plant',x:x+a,y:y+b,solid:true,v:Math.floor(th(x+a,y+b,915)*3)});
-      for(const [a,b] of [[-1,-1],[2,-1]]) if(freeT(x+a,y+b)) addObj({type:'brazier',x:x+a,y:y+b,solid:true}); }
+      for(const [a,b] of [[2,-1],[-1,3]]) if(freeT(x+a,y+b)) addObj({type:'brazier',x:x+a,y:y+b,solid:true}); }   // um de cada lado (o de trás sumia atrás do chafariz, com o fogo saindo do topo)
   }
 }
 const _bw=buildWorld;

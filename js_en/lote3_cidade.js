@@ -209,11 +209,22 @@ function animOverlay(g,o,k,m,X0,Y0,now){ const seed=(o.x*7+o.y*3)|0;
     for(let i=0;i<14;i++){ const ph=(f*1.2+i/14)%1, a=i*2.39, r=4+ph*20, x=cx+Math.cos(a)*r, y=Y0+14+ph*ph*30-Math.sin(ph*3.14)*10; g.fillRect(Math.round(x),Math.round(y),1,1); }
     for(let i=0;i<10;i++){ const r=hsh(i,Math.floor(now/220),seed); if(r>.6){ g.fillStyle='rgba(235,248,255,.8)'; g.fillRect(Math.round(cx-34+hsh(i,1,seed)*68),Math.round(Y0+52+hsh(i,2,seed)*26),2,1); } } }
 }
+// os objetos animados (vela, braseiro, caldeirão, chafariz...) são desenhados depois da camada assada dos móveis;
+// sem isto um candelabro atrás de uma cama aparece "em cima" do colchão. Redesenha por cima só os móveis que
+// estão NA FRENTE dele (mais fundo na ordem isométrica) e encostam no desenho, devolvendo a ordem certa.
+function reOcclude(g,o,cx,cy,X0,Y0,ww,hh){ const ow=o.w||1, oh=o.h||1, ox=o.x+ow/2, oy=o.y+oh/2;
+  const toS=(U,V)=>[cx+((U-ox)-(V-oy))*ISOC.TW/2, cy+((U-ox)+(V-oy))*ISOC.TH/2], seen=new Set();
+  for(let y=o.y-1;y<=o.y+oh+3;y++) for(let x=o.x-1;x<=o.x+ow+3;x++){ if(!inB(x,y)) continue; const q=objGrid[y*W+x]; if(!q||q===o||seen.has(q)||q.lm) continue; seen.add(q);
+    const qw=q.w||1, qh=q.h||1;   // na frente = inteiro mais em +x ou +y, e nunca inteiro atrás (-x/-y)
+    if(ANIM[q.type]||!(q.x>=o.x+ow||q.y>=o.y+oh)||q.x+qw<=o.x||q.y+qh<=o.y) continue; const k=keyFor(q); if(!k||!L.img[k]) continue;
+    const m=L.meta[isoKey(q,k)||k]; if(!m) continue; const [qx,qy]=toS(q.x+(q.w||1)/2,q.y+(q.h||1)/2);
+    if(qx+m.w/2<X0||qx-m.w/2>X0+ww||qy+m.base<Y0||qy+m.base-m.h>Y0+hh) continue;
+    try{ drawSprite(g,toS,q,k,true); }catch(e){} } }
 function hookAnim(){ const _d=drawObj;
   drawObj=function(g,o,sx,sy,now){ const k=L.ready&&o&&!o.lm&&ANIM[o.type];
     if(k&&sx===0&&sy===0&&isoOn()&&L.img[k]){ try{ const m=L.meta[k], tr=g.getTransform(), a=tr.a||2, w=o.w||1, h=o.h||1;
         const cx=tr.e+w*8*a+h*12, cy=tr.f+h*16*a-h*6, cv=spriteCv(k,false,true,o), X0=Math.round(cx-cv.width/2), Y0=Math.round(cy+m.base-cv.height);
-        g.save(); g.setTransform(1,0,0,1,0,0); g.imageSmoothingEnabled=false; g.drawImage(cv,X0,Y0); animOverlay(g,o,k,m,X0,Y0,now||performance.now()); g.restore(); return; }catch(e){} }
+        g.save(); g.setTransform(1,0,0,1,0,0); g.imageSmoothingEnabled=false; g.drawImage(cv,X0,Y0); animOverlay(g,o,k,m,X0,Y0,now||performance.now()); reOcclude(g,o,cx,cy,X0,Y0,cv.width,cv.height); g.restore(); return; }catch(e){} }
     return _d(g,o,sx,sy,now); }; }
 // ---------------- carga ----------------
 L.load=async function(){
