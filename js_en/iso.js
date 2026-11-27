@@ -5,6 +5,8 @@
 // =====================================================================
 (function(){
 const C=ISOC, TW=C.TW, TH=C.TH, WH=C.WH, CK=16; // ladrilhos por pedaço de chão
+// Lote 5 (relevo): altura do ladrilho (0..3) e deslocamento vertical das figuras; sem js/lote5_relevo.js tudo fica plano
+const RV=()=>!!(window.RELEVO&&RELEVO.on), EP=24, ELT=(x,y)=>RV()?RELEVO.elev(x,y):0, EPX=e=>RV()?RELEVO.entPx(e):0;
 let camMode; try{ camMode=localStorage.getItem('outremer_cam')||'iso'; }catch(e){ camMode='iso'; }
 window.isoOn=()=>camMode==='iso' && typeof player!=='undefined' && !!player && !driving;
 window.camModeGet=()=>camMode;
@@ -152,7 +154,7 @@ let mobView=300, fAcc=0, fN=0, fLast=0;
 function adapt(now){ if(!MOBILE) return; if(fLast){ const dt=now-fLast; if(dt<250){ fAcc+=dt; fN++; } } fLast=now;
   if(fN>=90){ const avg=fAcc/fN; fAcc=0; fN=0; if(avg>42&&mobView>230){ mobView=Math.max(230,mobView-25); floorCache.size>FLOOR_MAX&&0; } } }
 function isoSize(){ const Wc=Math.round((parseFloat(canvas.style.width)||innerWidth)*dpr), Hc=Math.round((parseFloat(canvas.style.height)||innerHeight)*dpr);
-  isoZ=Math.max(1,Math.min(Wc,Hc)/(MOBILE?mobView:780)); if(!MOBILE) isoZ=Math.max(1,Math.round(isoZ)); const bw=Math.ceil(Wc/isoZ), bh=Math.ceil(Hc/isoZ);
+  isoZ=Math.max(1,Math.min(Wc,Hc)/(MOBILE?mobView:780)); if(!MOBILE) isoZ=Math.max(1,Math.round(isoZ)); if(RV()) isoZ*=RELEVO.zoomK(); const bw=Math.ceil(Wc/isoZ), bh=Math.ceil(Hc/isoZ);
   // no celular a tela do jogo fica do tamanho do buffer e o navegador amplia (bem mais leve que redesenhar em 2400 px)
   const cw=MOBILE?bw:Wc, chh=MOBILE?bh:Hc; if(canvas.width!==cw||canvas.height!==chh){ canvas.width=cw; canvas.height=chh; }
   if(buf.width!==bw||buf.height!==bh){ buf.width=bw; buf.height=bh; if(typeof lcv!=='undefined'){ lcv.width=bw; lcv.height=bh; } } return [bw,bh]; }
@@ -173,15 +175,16 @@ function screenFace(e,k){ let st=faceMem.get(e); if(!st){ st={x:e.x,y:e.y,f:null
   if(!st.f){ const v={down:[0,1],up:[0,-1],left:[-1,0],right:[1,0]}[e.face]; if(v){ const [sx,sy]=wv(v[0],v[1]); st.f=pickFace(sx,sy,null); } }
   return st.f||e.face; }
 // ---------- camadas assadas por pedaço ----------
-const LPX=100, LPT=210, LPB=40, layers=new Map(), itemsCache=new Map(), LAYER_MAX=MOBILE?16:30;
+const LPX=100, LPT=290, LPB=40, layers=new Map(), itemsCache=new Map(), LAYER_MAX=MOBILE?16:30;
 const BAKE_TREE=new Set(['tree','pine','olive']);
 function chunkItems(cu,cv){ const k=chunkKey(cu,cv); let r=itemsCache.get(k); if(r) return r; r={stat:[],dyn:[]};
-  for(let y=cv*CK;y<cv*CK+CK;y++) for(let x=cu*CK;x<cu*CK+CK;x++){ if(x<0||y<0||x>=W||y>=H) continue; const i=y*W+x, t=map[i];
+  for(let y=cv*CK;y<cv*CK+CK;y++) for(let x=cu*CK;x<cu*CK+CK;x++){ if(x<0||y<0||x>=W||y>=H) continue; const i=y*W+x, t=map[i], s0=r.stat.length, d0=r.dyn.length;
     if(t===TL.WALL||t===TL.WINDOW||t===TL.ROCK) r.stat.push({k:'w',x,y,d:x+y+1.95,rock:t===TL.ROCK});
     else if(t===TL.FENCE) r.stat.push({k:'f',x,y,d:x+y+1.9});
     if(doors.has(i)) r.dyn.push({k:'door',x,y,d:x+y+1.95});
     const o=objGrid[i]; if(o&&o.x===x&&o.y===y&&!o.lm){ const d=o.type==='rug'?-1e9:o.x+(o.w||1)+o.y+(o.h||1)-.6;
-      if(BAKE_TREE.has(o.type)) r.stat.push({k:'t',o,d,tree:true}); else if(!ANIM_TYPES.has(o.type)&&isoHasProp(o.type)) r.stat.push({k:'o',o,d}); else r.dyn.push({k:'sprite',o,d}); } }
+      if(BAKE_TREE.has(o.type)) r.stat.push({k:'t',o,d,tree:true}); else if(!ANIM_TYPES.has(o.type)&&isoHasProp(o.type)) r.stat.push({k:'o',o,d}); else r.dyn.push({k:'sprite',o,d}); }
+    const ev=ELT(x,y); if(ev!==0){ for(let q=s0;q<r.stat.length;q++) r.stat[q].ev=ev; for(let q=d0;q<r.dyn.length;q++) r.dyn[q].ev=ev; } if(RV()&&RELEVO.piece(x,y)) r.stat.push({k:'e',x,y,d:x+y+.01,ev}); }
   r.stat.sort((a,b)=>a.d-b.d); itemsCache.set(k,r); return r; }
 // imagem + posição na tela (em coordenadas do buffer) de uma peça fixa
 function staticImg(it){ let im, X, Y;
@@ -189,7 +192,10 @@ function staticImg(it){ let im, X, Y;
   else if(it.k==='t'){ im=treeImg(it.o); [X,Y]=W2S((it.o.x+.5)*T,(it.o.y+.5)*T); }
   else if(it.k==='o'){ im=propImg(it.o); if(im===NOPROP) return null; [X,Y]=W2S(it.o.x*T,it.o.y*T); }
   else if(it.k==='f'){ im=fenceImg(); [X,Y]=W2S((it.x+.5)*T,(it.y+.5)*T); }
-  if(!im) return null; return {cv:im.cv,x:X-im.ax,y:Y-im.ay,w:im.cv.width,h:im.cv.height,low:!!im.low,tree:!!it.tree}; }
+  if(!im) return null; Y-=(it.ev||0)*EP; return {cv:im.cv,x:X-im.ax,y:Y-im.ay,w:im.cv.width,h:im.cv.height,low:!!im.low,tree:!!it.tree}; }
+// ladrilho do chão já montado (para o topo dos platôs)
+window.isoFloorTile=(x,y)=>{ const cu=Math.floor(x/CK), cv=Math.floor(y/CK), f=floorCache.get(chunkKey(cu,cv)); if(!f) return null; const U0=cu*CK, V0=cv*CK;
+  return {cv:f, x:(CK*TW/2+(x-U0-(y-V0))*TW/2-TW/2)/FR, y:((x-U0+y-V0)*TH/2)/FR, FR}; };
 const hits=(r,PX,PY)=>PX>r.x+(r.tree?28:0)-18&&PX<r.x+r.w-(r.tree?28:0)+18&&PY-10>r.y&&PY-50<r.y+r.h-(r.tree?10:TH);
 let fenceCv=null; function fenceImg(){ if(fenceCv) return fenceCv; const cv=document.createElement('canvas'); cv.width=40; cv.height=34; const g=cv.getContext('2d');
   g.fillStyle='#4a3420'; for(const dx of [-14,0,14]) g.fillRect(20+dx-2,4,4,26); g.fillStyle='#5e4228'; g.fillRect(2,8,36,4); g.fillRect(2,18,36,4); fenceCv={cv,ax:20,ay:30}; return fenceCv; }
@@ -201,13 +207,15 @@ function getLayer(cu,cv){ const k=chunkKey(cu,cv); let L=layers.get(k);
   const st=chunkItems(cu,cv).stat, ox=isoOX, oy=isoOY;
   // posição da camada na tela agora: origem do pedaço
   const sx=isoOX+(cu*CK-cv*CK)*TW/2-CK*TW/2, sy=isoOY+(cu*CK+cv*CK)*TH/2;
-  while(L.idx<st.length){ if(overBudget()) return L; const r=staticImg(st[L.idx]); if(!r){ if(overBudget()) return L; L.idx++; continue; }
+  while(L.idx<st.length){ if(overBudget()) return L; if(st[L.idx].k==='e'){ const it=st[L.idx], toL=(U,V)=>[LPX+(U-cu*CK-(V-cv*CK))*TW/2+CK*TW/2, LPT+(U-cu*CK+V-cv*CK)*TH/2];
+      const rr=RV()?RELEVO.drawPiece(L.g,it,toL):null; if(rr) L.items.push({x:rr.x,y:rr.y,w:rr.w,h:rr.h,d:it.d,ev:it.ev,piece:it,cu,cv}); L.idx++; continue; }
+    const r=staticImg(st[L.idx]); if(!r){ if(overBudget()) return L; L.idx++; continue; }
     const rx=r.x-sx+LPX, ry=r.y-sy+LPT; L.g.drawImage(r.cv,rx,ry); L.items.push({cv:r.cv,x:rx,y:ry,w:r.w,h:r.h,d:st[L.idx].d,low:r.low,tree:r.tree}); L.idx++; }
   L.done=true; L.g=null; while(layers.size>LAYER_MAX) layers.delete(layers.keys().next().value); return L; }
 function isoRenderFrame(now){
   frameT0=performance.now(); adapt(frameT0); const [bw,bh]=isoSize(), g=bctx;
   const px=player.x, py=player.y-6;
-  isoOX=Math.round(bw/2-(px-py)/T*TW/2); isoOY=Math.round(bh/2-(px+py)/T*TH/2+20);
+  const pev=EPX(player); isoOX=Math.round(bw/2-(px-py)/T*TW/2); isoOY=Math.round(bh/2-(px+py)/T*TH/2+20+pev);
   if(shake>0&&OPTS.shake){ isoOX+=Math.round((Math.random()-.5)*shake*2); isoOY+=Math.round((Math.random()-.5)*shake*2); }
   viewX=player.x-bw/3; viewY=player.y-bh/3;
   g.imageSmoothingEnabled=false; g.setTransform(1,0,0,1,0,0); g.fillStyle='#050404'; g.fillRect(0,0,bw,bh);
@@ -224,7 +232,7 @@ function isoRenderFrame(now){
     if(sx>bw||sx+CK*TW<0||sy>bh||sy+CK*TH<0) continue; want.push([cu,cv]); const f=getFloor(cu,cv); if(f) g.drawImage(f,sx,sy,CK*TW,CK*TH+2); }
   // vizinhos de fora da tela entram na fila depois (pré-carregamento)
   const pcu=Math.floor(pu), pcv=Math.floor(pv); for(let dv=-2;dv<=2;dv++) for(let du=-2;du<=2;du++) want.push([pcu+du,pcv+dv]);
-  pumpFloor(want); frameT0-=BUDGET*.6; // o resto do orçamento fica para as peças novas
+  pumpFloor(want); if(RV()) try{ RELEVO.ground(g,W2S,now,bw,bh); }catch(e){} frameT0-=BUDGET*.6; // o resto do orçamento fica para as peças novas
   // ---- o que fica em pé ----
   // peças fixas (paredes, rochas, árvores, móveis 3D, cercas) são "assadas" numa camada por pedaço:
   // poucas imagens por quadro. Portas, objetos animados e personagens são desenhados à parte.
@@ -248,7 +256,7 @@ function isoRenderFrame(now){
   const [PX,PY]=W2S(player.x,player.y), pdep=dep(player.x/T,player.y/T);
   let hid=false;
   for(const it of list){
-    if(it.k==='n'||it.k==='r'||it.k==='a'||it.k==='p'){ const e=it.e, [X,Y]=W2S(e.x,e.y);
+    if(it.k==='n'||it.k==='r'||it.k==='a'||it.k==='p'){ const e=it.e, [X,Y0]=W2S(e.x,e.y), Y=Y0-EPX(e);
       g.fillStyle='rgba(0,0,0,.3)'; g.beginPath(); g.ellipse(X+3,Y+1,12,5,0,0,7); g.fill();
       const of=e.face; e.face=screenFace(e,it.k);
       g.save(); g.translate(Math.round(X),Math.round(Y)); g.scale(SCL,SCL);
@@ -256,21 +264,24 @@ function isoRenderFrame(now){
       g.restore(); e.face=of; continue; }
     if(it.k==='door'){ const dr=doors.get(it.y*W+it.x); if(!dr||dr.open) continue; const im=doorImg(it.x,it.y,false); if(!im) continue; const [X,Y]=W2S((it.x+.5)*T,(it.y+.5)*T); g.drawImage(im.cv,X-im.ax,Y-im.ay); continue; }
     if(it.k==='lm'){ try{ const r=lmIsoDraw(g,it.o,now,W2S,true); if(r){ const fade=it.d>pdep&&PX>r.x+r.w*.25&&PX<r.x+r.w*.75&&PY>r.y+r.h*.2&&PY<r.y+r.h-20; if(fade) g.globalAlpha=.42; g.drawImage(r.cv,r.x,r.y); g.globalAlpha=1; } lmIsoDraw(g,it.o,now,W2S,false); }catch(e){} continue; }
+    if(it.k==='e'){ if(RV()) try{ RELEVO.drawPiece(g,it,(U,V)=>W2S(U*T,V*T)); }catch(e){} continue; }
     if(it.k==='sprite'&&it.o.type==='hearth'){ try{ isoHearth(g,it.o,now); }catch(e){} continue; }
-    if(it.k==='sprite'){ const o=it.o, w=o.w||1, h=o.h||1, [X,Y]=W2S((o.x+w/2)*T,(o.y+h)*T); g.save(); g.translate(Math.round(X-w*8*SCL),Math.round(Y-h*16*SCL)); g.scale(SCL,SCL); try{ drawObj(g,o,0,0,now); }catch(e){} g.restore(); continue; }
+    if(it.k==='sprite'){ const o=it.o, w=o.w||1, h=o.h||1, [X,Y1]=W2S((o.x+w/2)*T,(o.y+h)*T), Y=Y1-(it.ev||0)*EP; g.save(); g.translate(Math.round(X-w*8*SCL),Math.round(Y-h*16*SCL)); g.scale(SCL,SCL); try{ drawObj(g,o,0,0,now); }catch(e){} g.restore(); continue; }
     // peça fixa de um pedaço ainda não assado
     const r=staticImg(it); if(!r) continue; const fade=it.d>pdep&&!r.low&&hits(r,PX,PY); if(fade){ hid=true; g.globalAlpha=it.tree?.3:.38; } g.drawImage(r.cv,r.x,r.y); g.globalAlpha=1;
   }
   // personagens atrás de peças assadas: redesenha só essas peças por cima (o herói deixa-as translúcidas)
   const redo=new Set();
-  for(const e of ents){ const [X,Y]=W2S(e.e.x,e.e.y);
-    for(const [L,sx,sy] of layersDrawn) for(const r of L.items){ if(r.d<=e.d||redo.has(r)) continue; const rx=sx-LPX+r.x, ry=sy-LPT+r.y;
+  for(const e of ents){ const [X,Y0]=W2S(e.e.x,e.e.y), epx=EPX(e.e), Y=Y0-epx;
+    for(const [L,sx,sy] of layersDrawn) for(const r of L.items){ if(r.d<=e.d||redo.has(r)) continue; if(r.piece&&epx>=(r.ev-.5)*EP) continue; const rx=sx-LPX+r.x, ry=sy-LPT+r.y;
       if(X+16<rx||X-16>rx+r.w||Y-52>ry+r.h||Y+4<ry) continue; redo.add(r);
+      if(r.piece){ if(e.k==='p') hid=true; try{ RELEVO.drawPiece(g,r.piece,(U,V)=>W2S(U*T,V*T)); }catch(err){} continue; }
       if(e.k==='p'&&!r.low){ hid=true; g.globalAlpha=r.tree?.3:.38; } g.drawImage(r.cv,rx,ry); g.globalAlpha=1; } }
   // herói atrás de árvore/parede: silhueta translúcida por cima (como no Diablo)
-  if(hid){ const [X,Y]=W2S(player.x,player.y); g.save(); g.globalAlpha=.55; g.translate(Math.round(X),Math.round(Y)); g.scale(SCL,SCL); const of=player.face, st=faceMem.get(player); if(st&&st.f) player.face=st.f; try{ drawPlayer(g,0,0); }catch(e){} player.face=of; g.restore(); }
+  if(hid){ const [X,Y]=W2S(player.x,player.y); g.save(); g.globalAlpha=.55; g.translate(Math.round(X),Math.round(Y-EPX(player))); g.scale(SCL,SCL); const of=player.face, st=faceMem.get(player); if(st&&st.f) player.face=st.f; try{ drawPlayer(g,0,0); }catch(e){} player.face=of; g.restore(); }
   // efeitos no chão/ar com a mesma projeção (partículas, rastros, magias, fantasma da construção)
-  g.save(); g.setTransform(TW/(2*T),TH/(2*T),-TW/(2*T),TH/(2*T),isoOX,isoOY);
+  if(RV()) try{ RELEVO.air(g,W2S,now,bw,bh); }catch(e){}
+  g.save(); g.setTransform(TW/(2*T),TH/(2*T),-TW/(2*T),TH/(2*T),isoOX,isoOY-pev);
   for(const p of particles){ g.fillStyle=p.col; g.fillRect(Math.round(p.x),Math.round(p.y-p.z*1.6),1.5,1.5); }
   for(const t of tracers){ g.strokeStyle=`rgba(255,230,150,${t.t/.07})`; g.lineWidth=1; g.beginPath(); g.moveTo(t.x1,t.y1); g.lineTo(t.x2,t.y2); g.stroke(); }
   if(typeof drawFX==='function') try{ drawFX(g,0,0); }catch(e){}
@@ -281,8 +292,8 @@ function isoRenderFrame(now){
   const dusk=Math.max(0,1-Math.abs(time-18.3)/1.6); if(dusk>0){ g.fillStyle=`rgba(230,110,40,${0.12*dusk})`; g.fillRect(0,0,bw,bh); }
   const dk=darkness(time);
   if(dk>0.01){ const lights=[];
-    for(const [cu,cv] of vch) for(const it of chunkItems(cu,cv).stat.concat(chunkItems(cu,cv).dyn)) if(it.o&&it.o.light){ const [X,Y]=W2S(it.o.x*T+8,it.o.y*T+8); lights.push([X,Y-20,150*flick(now,it.o.seed||1),.32]); }
-    const [lx,ly]=W2S(player.x,player.y); lights.push([lx,ly-24,70,0]); if(player.lanternOn&&hasItem('lantern')) lights.push([lx,ly-24,190*flick(now,3),.22]);
+    for(const [cu,cv] of vch) for(const it of chunkItems(cu,cv).stat.concat(chunkItems(cu,cv).dyn)) if(it.o&&it.o.light){ const [X,Y]=W2S(it.o.x*T+8,it.o.y*T+8); lights.push([X,Y-20-(it.ev||0)*EP,150*flick(now,it.o.seed||1),.32]); }
+    const [lx,ly0]=W2S(player.x,player.y), ly=ly0-pev; lights.push([lx,ly-24,70,0]); if(player.lanternOn&&hasItem('lantern')) lights.push([lx,ly-24,190*flick(now,3),.22]);
     lctx.globalCompositeOperation='source-over'; lctx.clearRect(0,0,bw,bh); lctx.fillStyle=`rgba(4,6,16,${dk})`; lctx.fillRect(0,0,bw,bh); lctx.globalCompositeOperation='destination-out';
     for(const [x,y,r] of lights){ if(x<-r||x>bw+r||y<-r||y>bh+r) continue; const gr=lctx.createRadialGradient(x,y,0,x,y,r); gr.addColorStop(0,'rgba(0,0,0,1)'); gr.addColorStop(.55,'rgba(0,0,0,.7)'); gr.addColorStop(1,'rgba(0,0,0,0)'); lctx.fillStyle=gr; lctx.fillRect(x-r,y-r,2*r,2*r); }
     g.drawImage(lcv,0,0); if(!MOBILE){ g.globalCompositeOperation='lighter';
@@ -296,7 +307,7 @@ function isoRenderFrame(now){
   // rótulos (nomes, falas, barras): ficam presos ao personagem e sobem na vertical da tela
   const entsL=ents.map(it=>it.e);
   const S=(wx,wy)=>{ let best=null; for(const e of entsL){ const dy=e.y-wy; if(Math.abs(e.x-wx)<3&&dy>=-2&&dy<120){ if(!best||Math.abs(e.x-wx)<Math.abs(best.x-wx)) best=e; } }
-    if(best){ const [X,Y]=W2S(best.x,best.y); return [(X+(wx-best.x)*SCL)*OZ,(Y-(best.y-wy)*SCL)*OZ]; }
+    if(best){ const [X,Y0]=W2S(best.x,best.y), Y=Y0-EPX(best); return [(X+(wx-best.x)*SCL)*OZ,(Y-(best.y-wy)*SCL)*OZ]; }
     const [X,Y]=W2S(wx,wy); return [X*OZ,Y*OZ]; };
   if(typeof drawHiResLabels==='function'){ const d0=dpr; dpr=dpr*OZ/isoZ; try{ drawHiResLabels(ctx,S); }finally{ dpr=d0; } }
   if(search){ const [sx,sy]=S(player.x,player.y-26); const w=40*dpr*OZ/isoZ, h=6*dpr*OZ/isoZ; ctx.fillStyle='#000'; ctx.fillRect(sx-w/2-dpr,sy-h-dpr,w+2*dpr,h+2*dpr); ctx.fillStyle=search.fish?'#5a9ad0':'#d69a4c'; ctx.fillRect(sx-w/2,sy-h,w*(search.t/search.dur),h); }
@@ -307,9 +318,12 @@ render=function(now){ if(isoOn()) return isoRenderFrame(now);
   if(MOBILE&&canvas.width!==Math.floor((parseFloat(canvas.style.width)||innerWidth)*dpr)) try{ resize(); }catch(e){}
   return _renderIso(now); };
 const _mwIso=mouseWorld;
-mouseWorld=function(){ if(!isoOn()) return _mwIso(); const X=mouse.x*dpr/isoZ, Y=mouse.y*dpr/isoZ, a=(X-isoOX)/(TW/2), b=(Y-isoOY)/(TH/2); return {x:(a+b)/2*T, y:(b-a)/2*T}; };
+mouseWorld=function(){ if(!isoOn()) return _mwIso(); const X=mouse.x*dpr/isoZ, Y=mouse.y*dpr/isoZ;
+  const inv=yy=>{ const a=(X-isoOX)/(TW/2), b=(yy-isoOY)/(TH/2); return {x:(a+b)/2*T, y:(b-a)/2*T}; };
+  if(RV()) for(let h=3;h>=1;h--){ const p=inv(Y+h*EP); if(ELT(Math.floor(p.x/T),Math.floor(p.y/T))===h) return p; }
+  return inv(Y); };
 // clique nos personagens pela figura na tela (não pelo chão atrás deles)
-function screenHit(e,h){ const [X,Y]=W2S(e.x,e.y), mx=mouse.x*dpr/isoZ, my=mouse.y*dpr/isoZ; return mx>X-14&&mx<X+14&&my>Y-(h||44)&&my<Y+6 ? Math.hypot(mx-X,my-(Y-20)) : -1; }
+function screenHit(e,h){ const [X,Y0]=W2S(e.x,e.y), Y=Y0-EPX(e), mx=mouse.x*dpr/isoZ, my=mouse.y*dpr/isoZ; return mx>X-14&&mx<X+14&&my>Y-(h||44)&&my<Y+6 ? Math.hypot(mx-X,my-(Y-20)) : -1; }
 if(typeof monsterAt==='function'){ const _ma=monsterAt; monsterAt=function(wx,wy){ if(!isoOn()) return _ma(wx,wy); let best=null,bd=1e9; for(const r of raiders){ const sc=((MONS[r.mon]||{}).scale||1), d=screenHit(r,44*sc); if(d>=0&&d<bd){ bd=d; best=r; } } return best; }; }
 if(typeof npcAt==='function'){ const _na=npcAt; npcAt=function(wx,wy){ if(!isoOn()) return _na(wx,wy); for(const n of npcs){ if(n.dead||!n.active) continue; if(screenHit(n)>=0) return n; } for(const a of animals){ if(screenHit(a,30)>=0) return {animal:a}; } return null; }; }
 // mudanças no mapa (construção, casas): refaz o chão e as peças daquele lugar
