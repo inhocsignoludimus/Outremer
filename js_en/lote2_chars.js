@@ -353,7 +353,7 @@ function monKind(id,M){ if(!M) return null;
 const ANIM_K={bear:'urso',boar:'javali',wolfp:'lobo'};   // substituído pelo mapa_animais ao carregar
 function animKind(a){ const mA=L2.mapA||{}, e=(a.sacred&&mA[a.kind+':sacred'])||mA[a.kind], k=e?spr(e.sprite):ANIM_K[a.kind];
   return k&&L2.img[k]&&L2.meta.sprites[k]?[k,e&&e.escala_base||1]:null; }
-L2.monKind=monKind; L2.animKind=animKind;   // para testes (L2.drawn=new Set() registra as folhas desenhadas)
+L2.compose=compose; L2.dressOf=dressOf; L2.monKind=monKind; L2.animKind=animKind;   // para testes (L2.drawn=new Set() registra as folhas desenhadas)
 // ---------------- ganchos ----------------
 const _drawHuman=drawHuman;
 drawHuman=function(g,x,y,h){
