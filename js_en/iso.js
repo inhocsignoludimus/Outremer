@@ -232,7 +232,8 @@ function isoRenderFrame(now){
     if(sx>bw||sx+CK*TW<0||sy>bh||sy+CK*TH<0) continue; want.push([cu,cv]); const f=getFloor(cu,cv); if(f) g.drawImage(f,sx,sy,CK*TW,CK*TH+2); }
   // vizinhos de fora da tela entram na fila depois (pré-carregamento)
   const pcu=Math.floor(pu), pcv=Math.floor(pv); for(let dv=-2;dv<=2;dv++) for(let du=-2;du<=2;du++) want.push([pcu+du,pcv+dv]);
-  pumpFloor(want); if(RV()) try{ RELEVO.ground(g,W2S,now,bw,bh); }catch(e){} frameT0-=BUDGET*.6; // o resto do orçamento fica para as peças novas
+  pumpFloor(want); if(RV()) try{ RELEVO.ground(g,W2S,now,bw,bh); }catch(e){} frameT0-=BUDGET*.6;
+  const DW=(window.DAWN&&DAWN.on)?DAWN:null; if(DW) try{ DW.begin(now,W2S,EPX,bw,bh); DW.ground(g); }catch(e){} // lote6: chão (runas, poeira, campos) // o resto do orçamento fica para as peças novas
   // ---- o que fica em pé ----
   // peças fixas (paredes, rochas, árvores, móveis 3D, cercas) são "assadas" numa camada por pedaço:
   // poucas imagens por quadro. Portas, objetos animados e personagens são desenhados à parte.
@@ -257,9 +258,9 @@ function isoRenderFrame(now){
   let hid=false;
   for(const it of list){
     if(it.k==='n'||it.k==='r'||it.k==='a'||it.k==='p'){ const e=it.e, [X,Y0]=W2S(e.x,e.y), Y=Y0-EPX(e);
-      g.fillStyle='rgba(0,0,0,.3)'; g.beginPath(); g.ellipse(X+3,Y+1,12,5,0,0,7); g.fill();
-      const of=e.face; e.face=screenFace(e,it.k);
-      g.save(); g.translate(Math.round(X),Math.round(Y)); g.scale(SCL,SCL);
+      const of=e.face; e.face=screenFace(e,it.k); let Q=null; if(DW) try{ Q=DW.pose(e,it.k); }catch(err){ Q=null; } // lote6: pose procedural
+      const qs=Q?Q.sh:1, qx=Q?Q.dx:0, qy=Q?Q.dy:0; g.fillStyle='rgba(0,0,0,.3)'; g.beginPath(); g.ellipse(X+3+qx,Y+1+qy,12*qs,5*qs,0,0,7); g.fill();
+      g.save(); g.translate(Math.round(X+qx),Math.round(Y+qy-(Q?Q.hop:0))); if(Q){ if(Q.rot) g.rotate(Q.rot); if(Q.sx!==1||Q.sy!==1) g.scale(Q.sx,Q.sy); } g.scale(SCL,SCL);
       try{ if(it.k==='n') drawNPC(g,e,0,0); else if(it.k==='r') drawRaider(g,e,0,0); else if(it.k==='a') drawAnimal(g,e,0,0); else drawPlayer(g,0,-(player.onTower?26:0)); }catch(err){}
       g.restore(); e.face=of; continue; }
     if(it.k==='door'){ const dr=doors.get(it.y*W+it.x); if(!dr||dr.open) continue; const im=doorImg(it.x,it.y,false); if(!im) continue; const [X,Y]=W2S((it.x+.5)*T,(it.y+.5)*T); g.drawImage(im.cv,X-im.ax,Y-im.ay); continue; }
@@ -278,7 +279,7 @@ function isoRenderFrame(now){
       if(r.piece){ if(e.k==='p') hid=true; try{ RELEVO.drawPiece(g,r.piece,(U,V)=>W2S(U*T,V*T)); }catch(err){} continue; }
       if(e.k==='p'&&!r.low){ hid=true; g.globalAlpha=r.tree?.3:.38; } g.drawImage(r.cv,rx,ry); g.globalAlpha=1; } }
   // herói atrás de árvore/parede: silhueta translúcida por cima (como no Diablo)
-  if(hid){ const [X,Y]=W2S(player.x,player.y); g.save(); g.globalAlpha=.55; g.translate(Math.round(X),Math.round(Y-EPX(player))); g.scale(SCL,SCL); const of=player.face, st=faceMem.get(player); if(st&&st.f) player.face=st.f; try{ drawPlayer(g,0,0); }catch(e){} player.face=of; g.restore(); }
+  if(hid){ const [X,Y]=W2S(player.x,player.y); const Q2=DW&&DW.lastPose(player); g.save(); g.globalAlpha=.55; g.translate(Math.round(X+(Q2?Q2.dx:0)),Math.round(Y-EPX(player)+(Q2?Q2.dy-Q2.hop:0))); if(Q2){ if(Q2.rot) g.rotate(Q2.rot); g.scale(Q2.sx,Q2.sy); } g.scale(SCL,SCL); const of=player.face, st=faceMem.get(player); if(st&&st.f) player.face=st.f; try{ drawPlayer(g,0,0); }catch(e){} player.face=of; g.restore(); }
   // efeitos no chão/ar com a mesma projeção (partículas, rastros, magias, fantasma da construção)
   if(RV()) try{ RELEVO.air(g,W2S,now,bw,bh); }catch(e){}
   g.save(); g.setTransform(TW/(2*T),TH/(2*T),-TW/(2*T),TH/(2*T),isoOX,isoOY-pev);
@@ -287,6 +288,7 @@ function isoRenderFrame(now){
   if(typeof drawFX==='function') try{ drawFX(g,0,0); }catch(e){}
   if(ghost){ const gx=ghost.gx*T, gy=ghost.gy*T; g.strokeStyle=ghost.ok?'rgba(110,230,110,.95)':'rgba(240,80,60,.95)'; g.lineWidth=1; g.strokeRect(gx+.5,gy+.5,ghost.w*T-1,ghost.h*T-1); g.fillStyle=ghost.ok?'rgba(110,230,110,.25)':'rgba(240,80,60,.25)'; g.fillRect(gx,gy,ghost.w*T,ghost.h*T); }
   g.restore();
+  if(DW) try{ DW.air(g); }catch(e){} // lote6: efeitos de combate/magia, números, mortes
   // luz do dia / noite
   g.fillStyle='rgba(18,22,30,.10)'; g.fillRect(0,0,bw,bh);
   const dusk=Math.max(0,1-Math.abs(time-18.3)/1.6); if(dusk>0){ g.fillStyle=`rgba(230,110,40,${0.12*dusk})`; g.fillRect(0,0,bw,bh); }
