@@ -164,13 +164,20 @@ function useAbility(id){
 
 // ---------------- morte: o espírito procura o padre ----------------
 die = function(){
-  if(player.ghost) return;
-  player.ghost=true; player.health=1; player.poison=0; player.slowT=0; player.sb={}; recalcGear();
+  if(player.ghost){ if(player.health<1) player.health=1; return; }
+  player.ghost=true; player.health=1; player.poison=0; player.slowT=0; player.sb={}; recalcGear(); spiritBody();
+  for(const a of animals) if(!a.tamed && a.state==='charge'){ a.state='flee'; a.t=2; }
   const dl=document.getElementById('dead'); if(dl) dl.style.display='none';
   for(const r of raiders){ if(r.foe===player){ r.foe=null; r.state='wander'; } }
   fxBurst(player.x,player.y-10,'#c8d8ff',30,40);
   toast('You died. Your spirit wanders Aeloria… Find the priest at the Chapel of the Seal to return to life.');
 };
+// espírito: sem sangramento, perna quebrada, doença ou cansaço, e a vida presa em 1 até o padre. Antes o sangramento
+// continuava, a vida do fantasma ia abaixo de 0 e o update() parava no "die(); return;" a cada quadro (câmera, alvo e USE travados).
+function spiritBody(){ const fb=freshBody(); player.limbs=fb.limbs; player.bleed=fb.bleed; player.splint=fb.splint; player.sick=0; }
+const _tb6 = tickBody; tickBody = function(dt,r){ if(!player.ghost) return _tb6(dt,r);
+  if(PARTS.some(k=>player.bleed[k]||player.limbs[k]<100)||player.sick>0) spiritBody(); player.exhausted=false; player.stamina=player.maxStamina; if(player.health<1) player.health=1; };
+const _st6 = sharedTick; sharedTick = function(dt){ _st6(dt); if(player.ghost && player.health<1) player.health=1; };
 const _nf = nearestFoe; nearestFoe = function(a,range){ const f=_nf(a,range); return (f===player && (player.ghost || player.invisT>0)) ? null : f; };
 const _pa = playerAttack; playerAttack = function(ang){ if(player.ghost){ return; } _pa(ang); };
 const _dh5 = drawHuman;
@@ -190,7 +197,7 @@ const _talk = talkTo;
 talkTo = function(n){
   if(n.role!=='priest') return _talk(n);
   if(player.ghost){ openActions('Father Anselm', [['"Poor soul. In the name of the Father, and of the Son, and of the Holy Spirit: rise."',null],['Return to life', ()=>{
-      player.ghost=false; player.health=Math.round(player.maxHealth*.5); player.stamina=player.maxStamina; fxBurst(player.x,player.y-12,'#ffe890',30,50); fxRing(player.x,player.y,30,'#ffe890');
+      player.ghost=false; player.health=Math.round(player.maxHealth*.5); player.stamina=player.maxStamina; player.hunger=Math.max(player.hunger,40); player.thirst=Math.max(player.thirst,40); fxBurst(player.x,player.y-12,'#ffe890',30,50); fxRing(player.x,player.y,30,'#ffe890');
       toast('You return to life. Praise be to God.'); }]]); return; }
   openActions('Father Anselm, Chapel of the Seal', [['"The peace of Christ, my child. The Seal holds as long as there is faith in this land."',null],
     ['Ask for a blessing (heal)', ()=>{ player.health=player.maxHealth; player.poison=0; fxBurst(player.x,player.y-12,'#ffe890',20); toast('The priest blesses you. Your wounds close.'); }],

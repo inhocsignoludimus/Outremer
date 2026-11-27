@@ -49,6 +49,8 @@ const MAX_PETS=2;
 function animalNear(){ let best=null, bd=26; for(const a of animals){ const d=Math.hypot(a.x-player.x,a.y-player.y); if(d<bd){ bd=d; best=a; } } return best; }
 const _intM = interact;
 interact = function(){
+  if(running && player.ghost){ taming=null;   // espírito: nunca domar; o padre por perto tem prioridade sobre qualquer bicho
+    const pr=npcs.find(n=>n.role==='priest'&&!n.dead&&Math.hypot(n.x-player.x,n.y-player.y)<3*T); if(pr){ talkTo(pr); return; } return _intM(); }
   if(running && !search && !taming){ const a=animalNear();
     if(a && a.tamed){ const A=ANIMALS[a.kind], acts=[[`${a.name||A.name} — seu ${A.name.toLowerCase()} (${Math.round(a.hp)}/${A.hp})`,null]];
       if(A.mount) acts.push(['Montar', ()=>mountUp(a)]);
@@ -95,7 +97,7 @@ updateAnimals = function(dt){
     if(d>(tgt?12:10)){ const sp=A.speed*(d>5*T?1.3:.8)*dt, nx=a.x+dx/d*sp, ny=a.y+dy/d*sp; if(boxFree(nx,a.y)) a.x=nx; if(boxFree(a.x,ny)) a.y=ny; a.moving=true; a.phase+=dt*(A.speed/6); if(Math.abs(dx)>2) a.face=dx>0?1:-1; }
     else { a.moving=false; if(tgt && a.cd<=0){ a.cd=1.1; spellDamage(tgt,(A.dmg||6)*(1+skill('domar')/150),Math.atan2(dy,dx),4); } }
     if(tgt && Math.hypot(tgt.x-a.x,tgt.y-a.y)<16 && Math.random()<dt*.8){ a.hp-=(OW[tgt.weapon]?.dmg||8)*.35; a.hurtT=.12; if(a.hp<=0){ animals.splice(animals.indexOf(a),1); toast(`Seu ${A.name.toLowerCase()} morreu.`); } } }
-  if(taming){ const a=taming.a; if(!animals.includes(a)||Math.hypot(a.x-player.x,a.y-player.y)>4*T||player.moving){ taming=null; toast('Você perde a concentração.'); }
+  if(taming){ const a=taming.a; if(player.ghost||!animals.includes(a)||Math.hypot(a.x-player.x,a.y-player.y)>4*T||player.moving){ taming=null; toast('Você perde a concentração.'); }
     else { a.state='wander'; a.vx=0; a.vy=0; taming.t+=dt; if(Math.random()<dt*3) fxs.push({x:a.x,y:a.y-14,vx:0,vy:-8,t:.4,col:'#7ae07a'}); if(taming.t>=taming.dur){ taming=null; finishTame(a); } } }
 };
 // estábulo: cavalo pronto para quem não doma

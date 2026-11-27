@@ -121,12 +121,13 @@ function updateAnimals(dt){
     const A=ANIMALS[a.kind], dx=player.x-a.x, dy=player.y-a.y, d=Math.hypot(dx,dy);
     if(d>75*T){ animals.splice(animals.indexOf(a),1); continue; }
     if(a.hurtT>0) a.hurtT-=dt; a.cd=Math.max(0,a.cd-dt);
-    const sees = d<A.sight*T*(darkness(time)>.4?.6:1) && !driving;
+    const sees = d<A.sight*T*(darkness(time)>.4?.6:1) && !driving && !player.ghost;   // espírito: invisível para os bichos
     const loud = (keys.shift||runHeld) && player.moving && d<A.sight*T*1.4;
     if(A.flee && (sees||loud) && a.state!=='flee' && !player.crouch){ a.state='flee'; a.t=4+Math.random()*2; }
     if(A.aggro && sees && d<5*T && a.state!=='charge'){ a.state='charge'; a.t=7; }
     let mx=0,my=0,sp=A.speed*.35;
     if(a.state==='flee'){ a.t-=dt; mx=-dx/d; my=-dy/d; mx+= (Math.random()-.5)*.6; sp=A.speed*1.25; if(a.t<=0) a.state='wander'; }
+    else if(a.state==='charge' && player.ghost){ a.state='flee'; a.t=1.5; }   // largou o morto: se afasta e volta a vagar
     else if(a.state==='charge'){ a.t-=dt; mx=dx/d; my=dy/d; sp=A.speed*1.35;
       if(d<15 && a.cd<=0){ a.cd=1.3; hurtPlayer(A.dmg*(0.8+Math.random()*.4),{x:a.x,y:a.y,animal:true},rollPart('legs')); }
       if(a.t<=0 || d>12*T){ a.state='wander'; a.t=2; } }

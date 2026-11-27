@@ -151,6 +151,7 @@ const css=document.createElement('style'); css.id='lote4-css'; css.textContent=`
 #bag-gump .hw-bar .hw-grip{border:none!important}
 .hw-bar .hw-grip{border-top:2px dotted rgba(201,163,90,.65)!important;border-bottom:2px dotted rgba(201,163,90,.65)!important}
 #clock .hw-bar .hw-grip{border-color:rgba(90,58,24,.6)!important}
+#clock.hw-min .hw-bar::before{color:#2a1a0c!important;font-family:'Cinzel',serif;font-weight:700;text-shadow:0 1px 0 rgba(255,240,200,.55)!important}
 .hw-bar button{background:linear-gradient(#4a3420,#24170c)!important;border:1px solid var(--l4-brass)!important;color:var(--l4-gold)!important;border-radius:2px!important}
 .hw-min{background-clip:padding-box!important}
 /* nome, retrato e barras esculpidas */

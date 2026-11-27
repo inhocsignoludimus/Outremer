@@ -383,6 +383,13 @@ drawHuman=function(g,x,y,h){
 };
 const _drawPlayer=drawPlayer;
 drawPlayer=function(g,x,y){
+  // espírito do jogador (morto): fantasma pintado, translúcido, flutuando de leve
+  if(isoNow() && player.ghost && L2.img.fantasma_jogador && !(typeof invOpen!=='undefined'&&invOpen)){
+    const t=performance.now()/1000, bob=Math.round(Math.sin(t*2.2)*1.5)-1, ga=g.globalAlpha;
+    g.globalAlpha=ga*(.78+.08*Math.sin(t*3.1));
+    try{ blit(g,'fantasma_jogador',x,y+bob,player.face||'down',frameOf(player.moving,player.phase)); } finally { g.globalAlpha=ga; }
+    if(player.say && performance.now()<player.say.until && g===bctx) HILABELS.push({wx:player.x, wy:player.y-30, say:player.say.text, mine:true});
+    return; }
   if(isoNow() && !player.ghost && !(typeof invOpen!=='undefined'&&invOpen)){
     const mounted=!!(player.mount && CM.ready && mountSheet(player.mount.kind,player.mount));
     if(player.mount && !mounted) return _drawPlayer(g,x,y);
@@ -436,7 +443,11 @@ drawAnimal=function(g,a,sx,sy){
 // ---------------- retrato do HUD (52x60, pintado) ----------------
 let pKey='';
 function portrait(){ if(!L2.ready||!running||!player) return; const c=document.getElementById('hud-portrait'); if(!c) return;
-  if(player.ghost){ if(c.width!==26){ c.width=26; c.height=30; pKey=''; try{ portraitKey=''; }catch(e){} } return; }
+  if(player.ghost){ const gp=L2.portrait.__fantasma;
+    if(!gp){ if(c.width!==26){ c.width=26; c.height=30; pKey=''; try{ portraitKey=''; }catch(e){} } return; }
+    // redesenha a cada meio segundo: o retrato antigo (ui.js) pode ter rabiscado por cima ao virar espírito
+    if(c.width!==52){ c.width=52; c.height=60; } pKey='ghost'; const g=c.getContext('2d'); g.imageSmoothingEnabled=false;
+    g.clearRect(0,0,52,60); g.fillStyle='#16181e'; g.fillRect(0,0,52,60); g.drawImage(gp,0,0); return; }
   let e=null; if(CM.ready){ try{ e=compose(dressOf({look:player.look,gi:player.gi,head:player.equip&&player.equip.head,body:player.equip&&player.equip.body})); }catch(err){ e=null; } }
   const k=e?'L|'+e.k:advFor({gi:player.gi,equip:player.equip,weapon:player.weapon,sex:player.look&&player.look.sex}), im=!e&&L2.portrait[k];
   if(!e&&!im){ if(c.width!==26){ c.width=26; c.height=30; pKey=''; try{ portraitKey=''; }catch(err){} } return; }
@@ -454,6 +465,10 @@ L2.load=async function(){
     await Promise.all(Object.keys(meta.sprites).map(async k=>{ L2.img[k]=await loadImg(B+'sprites/'+k+'.png'); }));
     await Promise.all(meta.armas.map(async w=>{ L2.weap[w.k]={im:await loadImg(B+'armas/'+w.k+'.png'),px:w.px,py:w.py}; }));
     await Promise.all(meta.retratos.map(async k=>{ L2.portrait[k]=await loadImg(B+'retratos/retrato_'+k+'.png'); }));
+    // espírito do jogador (folha 3x3 no formato humano + retrato do HUD); se faltar, fica o fantasma antigo
+    try{ const [gs,gp]=await Promise.all([loadImg(B+'sprites/fantasma_jogador.png'),loadImg(B+'retratos/retrato_fantasma.png')]);
+      meta.sprites.fantasma_jogador={categoria:'espirito',cw:72,ch:84,ax:36,ay:80,linhas:['down','up','left'],colunas:['idle','passoA','passoB'],altura:53,largura:24};
+      L2.img.fantasma_jogador=gs; L2.portrait.__fantasma=gp; }catch(err){ console.warn('[lote2] fantasma do jogador indisponível',err); }
     try{ const mm=await (await fetch(B+'meta_monstros.json')).json(); L2.metaM=mm; L2.mapM=mm.mapa_monstros||{}; L2.mapA=mm.mapa_animais||{};
       await Promise.all(Object.entries(mm.sprites).map(async ([k,v])=>{ if(L2.meta.sprites[k]) return; L2.meta.sprites[k]=v; L2.img[k]=await loadImg(B+(v.arquivo||'monstros/'+k+'.png')); }));
       console.log('[lote2] monstros:',Object.keys(mm.sprites).length,'folhas,',Object.keys(L2.mapM).length,'ids de monstros,',Object.keys(L2.mapA).length,'animais');
