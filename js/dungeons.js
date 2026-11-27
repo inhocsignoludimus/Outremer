@@ -151,7 +151,7 @@ DRESSX.push(function(){ DUN.length=0; slotK=2; lvK=10;
   // 4. Ossário dos Templários
   { const o=entrance('portao_ossos','Y17',4,2); if(o){ const D={id:'ossario',name:'Ossário dos Templários',seed:7704,boss:'grao_mestre',loot:'d_ossario',exitMsg:'Você deixa o ossário. O vento vermelho dos ermos levanta poeira.',
       levels:[{name:'Ossário · Galeria dos Crânios',gen:'crypt',theme:THEME.ossario,mons:['templario_morto','skeleton','skeleton_archer','zombie_dark'],cap:6,deco:(r,k)=>{ for(let j=0;j<4;j++) put({type:'ossos',x:r.x+1+j*3,y:r.y}); if(k%2) put({type:'banner',x:r.x+r.w-2,y:r.y+1}); }},
-             {name:'Ossário · Capela do Grão-Mestre',gen:'crypt',theme:THEME.ossario,mons:['templario_morto','templario_morto','skeleton_mage'],cap:6,deco:(r,k)=>{ put({type:'sarcofago',x:r.x+2,y:r.y+r.h/2|0}); put({type:'sarcofago',x:r.x+r.w-3,y:r.y+r.h/2|0}); if(k%2===0) put({type:'altar',x:r.x+r.w/2|0,y:r.y+1}); }}]};
+             {name:'Ossário · Capela do Grão-Mestre',gen:'crypt',theme:THEME.ossario,mons:['templario_morto','templario_morto','skeleton_mage'],cap:6,deco:(r,k)=>{ put({type:'sarcofago',x:r.x+2,y:r.y+r.h/2|0}); put({type:'sarcofago',x:r.x+r.w-3,y:r.y+r.h/2|0}); if(k%2===0) put({type:'altar',x:r.x+r.w/2|0,y:r.y+1,w:2}); }}]};
       buildDungeon(D,o); o.dun=D; DUN.push(D); } }
   // 5. Necrópole das Areias
   { const o=entrance('fachada','Z19',6,2); if(o){ const D={id:'necropole',name:'Necrópole das Areias',seed:8805,boss:'califa',loot:'d_necropole',exitMsg:'Você sobe a escadaria coberta de areia e sai sob o sol do deserto.',
@@ -170,7 +170,7 @@ DRESSX.push(function(){ DUN.length=0; slotK=2; lvK=10;
     isle(tx-2,ty-3,5,4); for(let y=ty+1;y<ty+5;y++) for(let x=tx-1;x<=tx+1;x++) map[idx(x,y)]=TL.RUBBLE;
     const c=addObj({type:'ruina',v:'catedral',x:tx-2,y:ty-3,w:5,h:4,solid:true,lm:true}); window.LM_LIST.push(c); c.back=[tx,ty+2];
     const D={id:'velia',name:'Vélia Submersa',seed:9906,boss:'bispo_afogado',loot:'d_velia',exitMsg:'Você sai pela catedral afundada. Vaga-lumes dançam sobre a água verde.',
-      levels:[{name:'Vélia Submersa · Nave Alagada',gen:'crypt',theme:THEME.afogada,mons:['afogado','zombie','wyvern_water','skeleton'],cap:6,deco:(r,k)=>{ for(let j=0;j<r.w-4;j+=3) put({type:'pew',x:r.x+2+j,y:r.y+r.h/2|0}); }},
+      levels:[{name:'Vélia Submersa · Nave Alagada',gen:'crypt',theme:THEME.afogada,mons:['afogado','zombie','wyvern_water','skeleton'],cap:6,deco:(r,k)=>{ for(let j=0;j<r.w-4;j+=3) put({type:'pew',x:r.x+2+j,y:r.y+r.h/2|0,w:2}); }},
              {name:'Vélia Submersa · Cripta do Bispo',gen:'crypt',theme:THEME.afogada,mons:['afogado','afogado','skeleton_mage','wyvern_water'],cap:6,deco:(r,k)=>{ put({type:'pillar',x:r.x+1,y:r.y+1}); put({type:'pillar',x:r.x+r.w-2,y:r.y+r.h-2}); if(k%2) put({type:'sarcofago',x:r.x+r.w/2|0,y:r.y+1}); }}]};
     buildDungeon(D,c); c.dun=D; DUN.push(D);
     for(const R of D.R) for(let y=R.y;y<R.y+R.h;y++) for(let x=R.x;x<R.x+R.w;x++){ const i=idx(x,y); if(map[i]===TL.SWAMP&&th(x,y,611)<.25&&!objGrid[i]) map[i]=TL.WATER; } }

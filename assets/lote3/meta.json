@@ -455,5 +455,298 @@
   "fw": 1,
   "fh": 1,
   "face": "L"
+ },
+ {
+  "k": "banco_igreja_costas",
+  "w": 68,
+  "h": 57,
+  "base": 14,
+  "fw": 2,
+  "fh": 1,
+  "axis": "U"
+ },
+ {
+  "k": "altar_costas",
+  "w": 76,
+  "h": 73,
+  "base": 14,
+  "fw": 2,
+  "fh": 1,
+  "axis": "U"
+ },
+ {
+  "k": "cama_pes",
+  "w": 66,
+  "h": 50,
+  "base": 14,
+  "fw": 1,
+  "fh": 2,
+  "axis": "V"
+ },
+ {
+  "k": "bau_costas",
+  "w": 30,
+  "h": 30,
+  "base": 6,
+  "fw": 1,
+  "fh": 1,
+  "face": "L"
+ },
+ {
+  "k": "cadeira_costas",
+  "w": 25,
+  "h": 36,
+  "base": 5,
+  "fw": 1,
+  "fh": 1,
+  "face": "L"
+ },
+ {
+  "k": "balcao_iso",
+  "w": 50,
+  "h": 45,
+  "base": 14,
+  "fw": 1,
+  "fh": 1
+ },
+ {
+  "k": "balcao_iso_c",
+  "w": 50,
+  "h": 45,
+  "base": 14,
+  "fw": 1,
+  "fh": 1
+ },
+ {
+  "k": "bancada_iso",
+  "w": 50,
+  "h": 44,
+  "base": 14,
+  "fw": 1,
+  "fh": 1
+ },
+ {
+  "k": "bancada_iso_c",
+  "w": 50,
+  "h": 44,
+  "base": 14,
+  "fw": 1,
+  "fh": 1
+ },
+ {
+  "k": "estante_livros_iso",
+  "w": 50,
+  "h": 68,
+  "base": 14,
+  "fw": 1,
+  "fh": 1
+ },
+ {
+  "k": "estante_livros_iso_c",
+  "w": 50,
+  "h": 68,
+  "base": 14,
+  "fw": 1,
+  "fh": 1
+ },
+ {
+  "k": "estante_pocoes_iso",
+  "w": 50,
+  "h": 68,
+  "base": 14,
+  "fw": 1,
+  "fh": 1
+ },
+ {
+  "k": "estante_pocoes_iso_c",
+  "w": 50,
+  "h": 68,
+  "base": 14,
+  "fw": 1,
+  "fh": 1
+ },
+ {
+  "k": "estante_comida_iso",
+  "w": 50,
+  "h": 68,
+  "base": 14,
+  "fw": 1,
+  "fh": 1
+ },
+ {
+  "k": "estante_comida_iso_c",
+  "w": 50,
+  "h": 68,
+  "base": 14,
+  "fw": 1,
+  "fh": 1
+ },
+ {
+  "k": "armario_iso",
+  "w": 50,
+  "h": 64,
+  "base": 14,
+  "fw": 1,
+  "fh": 1
+ },
+ {
+  "k": "armario_iso_c",
+  "w": 50,
+  "h": 64,
+  "base": 14,
+  "fw": 1,
+  "fh": 1
+ },
+ {
+  "k": "guarda_roupa_iso",
+  "w": 50,
+  "h": 70,
+  "base": 14,
+  "fw": 1,
+  "fh": 1
+ },
+ {
+  "k": "guarda_roupa_iso_c",
+  "w": 50,
+  "h": 70,
+  "base": 14,
+  "fw": 1,
+  "fh": 1
+ },
+ {
+  "k": "vitrine_iso",
+  "w": 50,
+  "h": 46,
+  "base": 14,
+  "fw": 1,
+  "fh": 1
+ },
+ {
+  "k": "vitrine_iso_c",
+  "w": 50,
+  "h": 46,
+  "base": 14,
+  "fw": 1,
+  "fh": 1
+ },
+ {
+  "k": "criado_mudo_iso",
+  "w": 50,
+  "h": 42,
+  "base": 14,
+  "fw": 1,
+  "fh": 1
+ },
+ {
+  "k": "criado_mudo_iso_c",
+  "w": 50,
+  "h": 42,
+  "base": 14,
+  "fw": 1,
+  "fh": 1
+ },
+ {
+  "k": "suporte_armas_iso",
+  "w": 50,
+  "h": 64,
+  "base": 14,
+  "fw": 1,
+  "fh": 1
+ },
+ {
+  "k": "suporte_armas_iso_c",
+  "w": 50,
+  "h": 64,
+  "base": 14,
+  "fw": 1,
+  "fh": 1
+ },
+ {
+  "k": "suporte_arcos_iso",
+  "w": 50,
+  "h": 64,
+  "base": 14,
+  "fw": 1,
+  "fh": 1
+ },
+ {
+  "k": "suporte_arcos_iso_c",
+  "w": 50,
+  "h": 64,
+  "base": 14,
+  "fw": 1,
+  "fh": 1
+ },
+ {
+  "k": "ganchos_iso",
+  "w": 50,
+  "h": 54,
+  "base": 14,
+  "fw": 1,
+  "fh": 1
+ },
+ {
+  "k": "ganchos_iso_c",
+  "w": 50,
+  "h": 54,
+  "base": 14,
+  "fw": 1,
+  "fh": 1
+ },
+ {
+  "k": "estandarte_iso",
+  "w": 50,
+  "h": 80,
+  "base": 14,
+  "fw": 1,
+  "fh": 1
+ },
+ {
+  "k": "estandarte_iso_c",
+  "w": 50,
+  "h": 80,
+  "base": 14,
+  "fw": 1,
+  "fh": 1
+ },
+ {
+  "k": "estante_livros_iso_cc",
+  "w": 50,
+  "h": 38,
+  "base": 14,
+  "fw": 1,
+  "fh": 1
+ },
+ {
+  "k": "estante_pocoes_iso_cc",
+  "w": 50,
+  "h": 38,
+  "base": 14,
+  "fw": 1,
+  "fh": 1
+ },
+ {
+  "k": "estante_comida_iso_cc",
+  "w": 50,
+  "h": 38,
+  "base": 14,
+  "fw": 1,
+  "fh": 1
+ },
+ {
+  "k": "armario_iso_cc",
+  "w": 50,
+  "h": 38,
+  "base": 14,
+  "fw": 1,
+  "fh": 1
+ },
+ {
+  "k": "guarda_roupa_iso_cc",
+  "w": 50,
+  "h": 38,
+  "base": 14,
+  "fw": 1,
+  "fh": 1
  }
 ]

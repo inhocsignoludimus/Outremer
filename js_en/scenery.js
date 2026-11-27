@@ -60,8 +60,8 @@ function dressTowns(){
       let ok=true; for(let dy=-3;dy<=4&&ok;dy++) for(let dx=-3;dx<=4;dx++){ const xx=x+dx, yy=y+dy; if(!freeT(xx,yy)||!STONE.has(map[idx(xx,yy)])){ ok=false; break; } }
       if(ok){ best=[x,y]; bd=d; } }
     if(best){ const [x,y]=best; addObj({type:'fountain',x,y,w:2,h:2,solid:true});
-      if(freeT(x-3,y)&&freeT(x-2,y)) addObj({type:'bench',x:x-3,y,w:2,solid:true});
-      if(freeT(x+3,y+1)&&freeT(x+4,y+1)) addObj({type:'bench',x:x+3,y:y+1,w:2,solid:true});
+      if(freeT(x-2,y)&&freeT(x-2,y+1)) addObj({type:'bench',x:x-2,y,h:2,solid:true});   // bancos de frente para o chafariz (de lado, não apontando para ele)
+      if(freeT(x+3,y)&&freeT(x+3,y+1)) addObj({type:'bench',x:x+3,y,h:2,solid:true});
       for(const [a,b] of [[-3,-3],[4,-3],[-3,4],[4,4]]) if(freeT(x+a,y+b)) addObj({type:'plant',x:x+a,y:y+b,solid:true,v:Math.floor(th(x+a,y+b,915)*3)});
       for(const [a,b] of [[-1,-1],[2,-1]]) if(freeT(x+a,y+b)) addObj({type:'brazier',x:x+a,y:y+b,solid:true}); }
   }

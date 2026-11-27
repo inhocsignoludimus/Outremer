@@ -100,22 +100,96 @@ const ANIM={fountain:'chafariz',brazier:'braseiro',candle:'candelabro',campfire:
 const AWN=[null,[52,98,150],[66,118,52],[132,66,118]];
 function keyFor(o){ if(o.type==='shelf') return SHELF[o.kind||'books']||'estante_livros'; if(o.type==='wrack') return o.kind==='bows'?'suporte_arcos':'suporte_armas';
   if(o.type==='barco') return o.v==='pirata'?'navio_pirata':'navio'; return STAT[o.type]||null; }
-const wallAt=(x,y)=>x>=0&&y>=0&&x<W&&y<H&&isPanel(map[y*W+x]);
-const sameAt=(x,y,t)=>{ if(x<0||y<0||x>=W||y>=H) return false; const q=objGrid[y*W+x]; return !!q&&q.type===t; };
-// espelhar troca os eixos U e V na tela: assim um sprite serve para as duas direções
-function flipFor(o,m){ const w=o.w||1, h=o.h||1;
-  if(m.axis){ const want=w>h?'U':h>w?'V':(sameAt(o.x,o.y-1,o.type)||sameAt(o.x,o.y+1,o.type))?'V':'U'; return want!==m.axis; }
-  if(m.face){ let want;
-    if(o.type==='counter'&&(sameAt(o.x,o.y-1,o.type)||sameAt(o.x,o.y+1,o.type))) want='R';
-    else if(o.type==='counter'&&(sameAt(o.x-1,o.y,o.type)||sameAt(o.x+1,o.y,o.type))) want='L';
-    else if(wallAt(o.x,o.y-1)||wallAt(o.x,o.y+1)) want='L'; else if(wallAt(o.x-1,o.y)||wallAt(o.x+1,o.y)) want='R'; else want=hsh(o.x,o.y,7)<.5?'L':'R';
-    return want!==m.face; }
-  return hsh(o.x,o.y,11)<.5&&!/estatua|escada|navio|chafariz/.test(m.k); }
+const inB=(x,y)=>x>=0&&y>=0&&x<W&&y<H;
+const wallAt=(x,y)=>inB(x,y)&&(isPanel(map[y*W+x])||doors.has(y*W+x));
+const sameAt=(x,y,t)=>{ if(!inB(x,y)) return false; const q=objGrid[y*W+x]; return !!q&&q.type===t; };
+// ---- direção dos móveis ----
+// S = virado para +y (frente do desenho, para baixo-esquerda na tela), E = +x (frente espelhada),
+// N = -y (desenho de costas), W = -x (costas espelhadas). Espelhar troca os eixos U e V na tela.
+const ISO_BOX={counter:'balcao',workbench:'bancada',bookcase:'estante_livros',cabinet:'armario',wardrobe:'guarda_roupa',display:'vitrine',nightstand:'criado_mudo'};
+const ISO_PLANE={rack:'suporte_armas',hooks:'ganchos'};
+const BACK={banco_igreja:'banco_igreja_costas',altar:'altar_costas',cama:'cama_pes',bau:'bau_costas',cadeira:'cadeira_costas'};
+const WALLED=new Set(['shelf','bookcase','cabinet','wardrobe','display','nightstand','workbench','rack','wrack','hooks','banner','chest','safe','loom','board','anvil','tub','keg','barrel','crate','storage','awning','hay','logs','plant','statue']);
+const DIRS={S:[0,1],N:[0,-1],E:[1,0],W:[-1,0]};
+const EXPL={S:'S',N:'N',E:'E',W:'W',down:'S',up:'N',right:'E',left:'W',s:'S',n:'N',e:'E',w:'W'};
+function bldOf(o){ if(o.b==null||typeof buildings==='undefined') return null; const b=buildings[o.b]; return b&&b.id===o.b?b:buildings.find(q=>q&&q.id===o.b)||null; }
+function ctr(o){ return [o.x+(o.w||1)/2,o.y+(o.h||1)/2]; }
+// parede encostada em cada lado do objeto (toda a aresta conta)
+function wallSides(o){ const w=o.w||1, h=o.h||1, r={N:0,S:0,W:0,E:0};
+  for(let k=0;k<w;k++){ if(wallAt(o.x+k,o.y-1)) r.N++; if(wallAt(o.x+k,o.y+h)) r.S++; }
+  for(let k=0;k<h;k++){ if(wallAt(o.x-1,o.y+k)) r.W++; if(wallAt(o.x+w,o.y+k)) r.E++; } return r; }
+const AWAY={N:'S',S:'N',W:'E',E:'W'};
+// de costas para a parede; no canto, prefere a parede que acompanha a fileira de móveis iguais
+function awayFromWall(o,axisPref){ const ws=wallSides(o); let order=['N','W','S','E'];
+  if(axisPref==='U') order=['N','S','W','E']; else if(axisPref==='V') order=['W','E','N','S'];
+  for(const s of order) if(ws[s]) return AWAY[s];
+  const w=o.w||1, h=o.h||1;   // parede a 1-2 ladrilhos (móvel afastado um passo da parede)
+  for(let d=2;d<=3;d++) for(const s of order){ let hit=false;
+    if(s==='N'||s==='S'){ const yy=s==='N'?o.y-d:o.y+h-1+d; for(let k=0;k<w&&!hit;k++) hit=wallAt(o.x+k,yy); }
+    else { const xx=s==='W'?o.x-d:o.x+w-1+d; for(let k=0;k<h&&!hit;k++) hit=wallAt(xx,o.y+k); }
+    if(hit) return AWAY[s]; }
+  return null; }
+function rowAxis(o){ const t=o.type; if(sameAt(o.x-1,o.y,t)||sameAt(o.x+(o.w||1),o.y,t)) return 'U'; if(sameAt(o.x,o.y-1,t)||sameAt(o.x,o.y+(o.h||1),t)) return 'V'; return null; }
+function toward(o,tx,ty,axis){ const [cx,cy]=ctr(o), dx=tx-cx, dy=ty-cy;
+  if(axis==='U'||(!axis&&Math.abs(dy)>=Math.abs(dx))) return dy<0?'N':'S'; return dx<0?'W':'E'; }
+function doorOf(o){ const b=bldOf(o); if(!b||!b.doors||!b.doors.length) return null; const [cx,cy]=ctr(o); let best=null,bd=1e9; for(const d of b.doors){ const q=Math.hypot(d[0]+.5-cx,d[1]+.5-cy); if(q<bd){ bd=q; best=d; } } return best; }
+function nearestOf(o,types,R){ const [cx,cy]=ctr(o), b=o.b; let best=null,bd=1e9;
+  for(let y=Math.floor(cy-R);y<=cy+R;y++) for(let x=Math.floor(cx-R);x<=cx+R;x++){ if(!inB(x,y)) continue; const q=objGrid[y*W+x]; if(!q||q===o||!types.includes(q.type)) continue; if(b!=null&&q.b!==b) continue;
+    const [qx,qy]=ctr(q), d=Math.hypot(qx-cx,qy-cy); if(d<bd){ bd=d; best=q; } } return best; }
+function axisOf(o){ const w=o.w||1, h=o.h||1; return w>h?'U':h>w?'V':null; }
+function facingOf(o){
+  if(o._l3f!==undefined) return o._l3f; let f=null;
+  const ex=o.dir!=null?o.dir:o.facing!=null?o.facing:o.orient; if(ex!=null) f=EXPL[ex]||null;
+  if(!f&&typeof o.rot==='number') f=['S','W','N','E'][((o.rot%4)+4)%4];
+  if(!f){ const t=o.type, ax=axisOf(o);
+    if(t==='pew'){ const a=nearestOf(o,['altar'],24); if(a){ const [ax2,ay2]=ctr(a); f=toward(o,ax2,ay2,ax||'U'); } else { const d=doorOf(o); f=d?AWAY[toward(o,d[0]+.5,d[1]+.5,ax||'U')]:(ax==='V'?'E':'S'); } }
+    else if(t==='altar'){ const p=nearestOf(o,['pew'],24); if(p){ const [px,py]=ctr(p); f=toward(o,px,py,ax||'U'); } else { const w=awayFromWall(o,ax); if(w) f=w; else { const d=doorOf(o); f=d?toward(o,d[0]+.5,d[1]+.5,ax||'U'):'S'; } } }
+    else if(t==='throne'){ const d=doorOf(o); f=d?toward(o,d[0]+.5,d[1]+.5):(awayFromWall(o)||'S'); }
+    else if(t==='chair'){ const tb=nearestOf(o,['table','desk','workbench','counter'],1.6); if(tb){ const [tx,ty]=ctr(tb); f=toward(o,tx,ty); }
+      else if(o.v===0) f='E'; else if(o.v===1) f='W'; else if(o.v===2) f='N'; else f=awayFromWall(o)||'S'; }
+    else if(t==='bed'||t==='hbed'){ // cabeceira na parede da ponta mais perto (a cama nunca troca de eixo)
+      const w=o.w||1, h=o.h||1, along=ax==='U'; let f0=null;
+      for(let d=1;d<=4&&!f0;d++){ let a=false,b=false;
+        if(!along){ for(let k=0;k<w;k++){ a=a||wallAt(o.x+k,o.y-d); b=b||wallAt(o.x+k,o.y+h-1+d); } if(a) f0='S'; else if(b) f0='N'; }
+        else { for(let k=0;k<h;k++){ a=a||wallAt(o.x-d,o.y+k); b=b||wallAt(o.x+w-1+d,o.y+k); } if(a) f0='E'; else if(b) f0='W'; } }
+      f=f0||(along?'E':'S'); }
+    else if(t==='bench'||t==='barco'||t==='sofa') f=ax==='V'?'E':'S';
+    else if(t==='counter'){ const ra=rowAxis(o)||ax, d=doorOf(o); if(d) f=toward(o,d[0]+.5,d[1]+.5,ra||null); else f=awayFromWall(o,ra)||'S'; }
+    else if(WALLED.has(t)){ f=awayFromWall(o,rowAxis(o)); if(!f){ const d=doorOf(o); f=d?toward(o,d[0]+.5,d[1]+.5):null; } }
+  }
+  o._l3f=f; return f; }
+// parede atrás do móvel é uma parede da frente que o jogo desenha cortada (interior atrás, rua na frente)?
+function cutBehind(o,f){ const w=o.w||1, h=o.h||1, IN=ISOC.INTERIOR; if(!IN) return false;
+  if(f==='N'){ for(let k=0;k<w;k++){ const x=o.x+k, y=o.y+h; if(wallAt(x,y)&&inB(x,y+1)&&!IN.has(map[(y+1)*W+x])) return true; } }
+  else if(f==='W'){ for(let k=0;k<h;k++){ const x=o.x+w, y=o.y+k; if(wallAt(x,y)&&inB(x+1,y)&&!IN.has(map[y*W+x+1])) return true; } }
+  return false; }
+// escolhe o desenho (frente/costas) e o espelho para a direção pedida
+function pickVar(k,o,m){ let f=facingOf(o);
+  // objetos compridos (banco, genuflexório, altar, cama, navio) nunca trocam de eixo: só frente/costas no eixo do ladrilho
+  if(f&&m.axis){ const w=o.w||1, h=o.h||1, fa=w>h?'U':h>w?'V':m.axis, ok=fa===m.axis?['S','N']:['E','W']; if(!ok.includes(f)) f=ok[0]; }
+  if(f){ const native=m.face==='R'?'E':'S'; const back=f==='N'||f==='W';
+    let kk=k; if(back&&L.img[BACK[k]]) kk=BACK[k];
+    else if(back&&L.img[k+'_cc']&&cutBehind(o,f)) kk=k+'_cc';   // encostado na parede da frente (cortada): corta junto
+    else if(back&&L.img[k+'_c']) kk=k+'_c';
+    const mirror=(f==='E'||f==='W')!==(native==='E'); return [kk,mirror]; }
+  // sem direção definida (objetos soltos sem parede, estátuas, navios...): regra antiga
+  const w=o.w||1, h=o.h||1;
+  if(m.axis){ const want=w>h?'U':h>w?'V':(sameAt(o.x,o.y-1,o.type)||sameAt(o.x,o.y+1,o.type))?'V':'U'; return [k,want!==m.axis]; }
+  if(m.face) return [k,(hsh(o.x,o.y,7)<.5?'L':'R')!==m.face];
+  return [k,hsh(o.x,o.y,11)<.5&&!/estatua|escada|navio|chafariz|orbe|pilar/.test(m.k)]; }
+// móveis de caixa e de parede usam a versão isométrica de 1 ladrilho (frente/costas)
+function isoKey(o,k){ if(ISO_BOX[o.type]&&L.img[ISO_BOX[o.type]+'_iso']) return ISO_BOX[o.type]+'_iso';
+  if(o.type==='shelf'&&L.img[k+'_iso']) return k+'_iso';
+  if((o.type==='wrack'||ISO_PLANE[o.type])&&L.img[k+'_iso']){ return k+'_iso'; }
+  if(o.type==='banner'&&o.b!=null&&L.img['estandarte_iso']){ const ws=wallSides(o); if(ws.N||ws.S||ws.W||ws.E) return 'estandarte_iso'; }
+  return null; }
 function spriteCv(k,flip,graded,o){ let key=k+(flip?'|f':'')+(graded?'|g':''); let v=L.gimg[key]; if(v) return v;
   let cv=L.img[k]; if(k==='barraca_feira'&&o){ const vi=Math.floor((window.th?th(o.x,o.y,5):0)*4)%4; if(AWN[vi]){ key+='|'+vi; v=L.gimg[key]; if(v) return v; cv=tintAwning(cv,AWN[vi]); } }
   if(flip) cv=flipCv(cv); if(graded) cv=gradeCopy(cv); L.gimg[key]=cv; return cv; }
-function drawSprite(g,toS,o,k,graded){ const m=L.meta[k]; if(!m||!L.img[k]) return false; const w=o.w||1, h=o.h||1, cv=spriteCv(k,flipFor(o,m),graded,o);
+function drawSprite(g,toS,o,k,graded){ if(!L.meta[k]||!L.img[k]) return false; k=isoKey(o,k)||k; const m0=L.meta[k];
+  const [kk,flip]=pickVar(k,o,m0), m=L.meta[kk]||m0, w=o.w||1, h=o.h||1, cv=spriteCv(kk,flip,graded,o);
   const [cx,cy]=toS(o.x+w/2,o.y+h/2); g.drawImage(cv,Math.round(cx-cv.width/2),Math.round(cy+m.base-cv.height)); return true; }
+L.facingOf=facingOf; L.pickVar=pickVar; L.isoKey=isoKey;
 L.keyFor=keyFor; L.drawSprite=drawSprite;
 let prevProp=null, prevHas=null;
 function hookProps(){ prevProp=window.isoProp; prevHas=window.isoHasProp;
