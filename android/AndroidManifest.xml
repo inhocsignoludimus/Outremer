@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.inhocsignoludimus.outremer" android:versionCode="15" android:versionName="2.4">
+    package="com.inhocsignoludimus.outremer.dawn" android:versionCode="2" android:versionName="2.4-dawn-2">
   <uses-sdk android:minSdkVersion="21" android:targetSdkVersion="34"/>
-  <application android:label="Outremer" android:icon="@mipmap/ic_launcher" android:allowBackup="true" android:hardwareAccelerated="true">
-    <activity android:name=".MainActivity" android:exported="true"
+  <uses-permission android:name="android.permission.INTERNET"/>
+  <application android:label="Outremer Dawn" android:icon="@mipmap/ic_launcher" android:allowBackup="true" android:hardwareAccelerated="true">
+    <activity android:name="com.inhocsignoludimus.outremer.MainActivity" android:exported="true"
         android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen"
         android:screenOrientation="sensorLandscape"
         android:configChanges="orientation|screenSize|keyboardHidden|keyboard|navigation|screenLayout|uiMode|smallestScreenSize">

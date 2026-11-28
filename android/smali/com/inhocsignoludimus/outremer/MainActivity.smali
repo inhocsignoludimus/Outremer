@@ -1,6 +1,12 @@
 .class public Lcom/inhocsignoludimus/outremer/MainActivity;
 .super Landroid/app/Activity;
 
+.annotation system Ldalvik/annotation/MemberClasses;
+    value = {
+        Lcom/inhocsignoludimus/outremer/MainActivity$Client;
+    }
+.end annotation
+
 .field private web:Landroid/webkit/WebView;
 
 .method public constructor <init>()V
@@ -21,7 +27,7 @@
 .end method
 
 .method protected onCreate(Landroid/os/Bundle;)V
-    .registers 6
+    .registers 8
     invoke-super {p0, p1}, Landroid/app/Activity;->onCreate(Landroid/os/Bundle;)V
     invoke-virtual {p0}, Landroid/app/Activity;->getWindow()Landroid/view/Window;
     move-result-object v0
@@ -41,17 +47,26 @@
     invoke-virtual {v1, v2}, Landroid/webkit/WebSettings;->setDatabaseEnabled(Z)V
     invoke-virtual {v1, v2}, Landroid/webkit/WebSettings;->setAllowFileAccess(Z)V
     invoke-virtual {v1, v2}, Landroid/webkit/WebSettings;->setAllowFileAccessFromFileURLs(Z)V
+    invoke-virtual {v1, v2}, Landroid/webkit/WebSettings;->setAllowUniversalAccessFromFileURLs(Z)V
     invoke-virtual {v1, v3}, Landroid/webkit/WebSettings;->setMediaPlaybackRequiresUserGesture(Z)V
     invoke-virtual {v1, v3}, Landroid/webkit/WebSettings;->setSupportZoom(Z)V
-    new-instance v1, Landroid/webkit/WebViewClient;
-    invoke-direct {v1}, Landroid/webkit/WebViewClient;-><init>()V
-    invoke-virtual {v0, v1}, Landroid/webkit/WebView;->setWebViewClient(Landroid/webkit/WebViewClient;)V
-    new-instance v1, Landroid/webkit/WebChromeClient;
-    invoke-direct {v1}, Landroid/webkit/WebChromeClient;-><init>()V
-    invoke-virtual {v0, v1}, Landroid/webkit/WebView;->setWebChromeClient(Landroid/webkit/WebChromeClient;)V
+    invoke-virtual {v1}, Landroid/webkit/WebSettings;->getUserAgentString()Ljava/lang/String;
+    move-result-object v4
+    const-string v5, " AfterLightApp"
+    invoke-virtual {v4, v5}, Ljava/lang/String;->concat(Ljava/lang/String;)Ljava/lang/String;
+    move-result-object v4
+    invoke-virtual {v1, v4}, Landroid/webkit/WebSettings;->setUserAgentString(Ljava/lang/String;)V
+    invoke-virtual {p0}, Lcom/inhocsignoludimus/outremer/MainActivity;->getAssets()Landroid/content/res/AssetManager;
+    move-result-object v4
+    new-instance v5, Lcom/inhocsignoludimus/outremer/MainActivity$Client;
+    invoke-direct {v5, v4}, Lcom/inhocsignoludimus/outremer/MainActivity$Client;-><init>(Landroid/content/res/AssetManager;)V
+    invoke-virtual {v0, v5}, Landroid/webkit/WebView;->setWebViewClient(Landroid/webkit/WebViewClient;)V
+    new-instance v5, Landroid/webkit/WebChromeClient;
+    invoke-direct {v5}, Landroid/webkit/WebChromeClient;-><init>()V
+    invoke-virtual {v0, v5}, Landroid/webkit/WebView;->setWebChromeClient(Landroid/webkit/WebChromeClient;)V
     invoke-virtual {p0, v0}, Landroid/app/Activity;->setContentView(Landroid/view/View;)V
-    const-string v1, "file:///android_asset/www/index.html"
-    invoke-virtual {v0, v1}, Landroid/webkit/WebView;->loadUrl(Ljava/lang/String;)V
+    const-string v5, "https://appassets.androidplatform.net/assets/www/index.html"
+    invoke-virtual {v0, v5}, Landroid/webkit/WebView;->loadUrl(Ljava/lang/String;)V
     invoke-direct {p0}, Lcom/inhocsignoludimus/outremer/MainActivity;->immersive()V
     return-void
 .end method
@@ -88,8 +103,10 @@
 .method public onBackPressed()V
     .registers 4
     iget-object v0, p0, Lcom/inhocsignoludimus/outremer/MainActivity;->web:Landroid/webkit/WebView;
+    if-nez v0, :done
     const-string v1, "document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',code:'Escape',keyCode:27,bubbles:true}))"
     const/4 v2, 0x0
     invoke-virtual {v0, v1, v2}, Landroid/webkit/WebView;->evaluateJavascript(Ljava/lang/String;Landroid/webkit/ValueCallback;)V
+    :done
     return-void
 .end method
