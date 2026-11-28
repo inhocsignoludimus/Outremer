@@ -81,13 +81,13 @@ function drawNums(g){ const t=now(); g.textAlign='center'; g.textBaseline='middl
 const FACE_SIGN={left:-1,right:1,down:0,up:0};
 D.pose=function(e,k){ let s=D.st.get(e); const t=now();
   if(!s){ s={ph:0,lx:e.x,ly:e.y,seed:Math.random()*9,hitT:-9,hitA:0,atkT:-9,atkA:0,shotT:-9,amp:0,lt:t,sw:0,wd:0}; D.st.set(e,s); }
-  const dt=clamp(t-s.lt,0,.1); s.lt=t; const dist=Math.hypot(e.x-s.lx,e.y-s.ly); s.lx=e.x; s.ly=e.y; s.face=e.face;
+  const dt=clamp(t-s.lt,0,.1); s.lt=t; const mdx=e.x-s.lx, mdy=e.y-s.ly, dist=Math.hypot(mdx,mdy); s.lx=e.x; s.ly=e.y; s.face=e.face; if(dist>.04) s.lean=(mdx-mdy)>0?1:-1;
   const mounted=k==='p'&&!!player.mount, beast=k==='a', moving=dist>.04&&dist<24;
   if(moving){ const pr=s.ph; s.ph+=dist*(mounted?.5:beast?.42:.36); s.amp=Math.min(1,s.amp+dt*9);
     if(Math.floor(s.ph/Math.PI)!==Math.floor(pr/Math.PI)){ if(mounted){ puff(e.x-Math.cos(s.ph)*2,e.y+1,3.2,'#b89d70'); if(Math.random()<.6) puff(e.x,e.y+1,2.4,'#c9b28a'); } else if(!(e.mon&&MONS[e.mon]&&MONS[e.mon].ghost)) puff(e.x,e.y+1,beast?1.6:1.9); } }
   else s.amp=Math.max(0,s.amp-dt*6);
   const A=s.amp, sn=Math.sin(s.ph); let hop=0, rot=0, sx=1, sy=1, dx=0, dy=0;
-  if(mounted){ hop=Math.abs(sn)*3.2*A; rot=Math.sin(s.ph+.6)*.05*A*(FACE_SIGN[e.face]||0||.5); }
+  if(mounted){ hop=Math.abs(sn)*3.2*A; rot=Math.sin(s.ph+.6)*.05*A*(s.lean||FACE_SIGN[e.face]||0); }
   else { hop=Math.abs(sn)*(beast?2:3.4)*A; rot=sn*(beast?.05:.122)*A; const land=1-Math.abs(sn); sy=1-.05*land*land*A; sx=1+.04*land*land*A; }
   const frozen=s.frozenT>t;
   if(!frozen){ const b=Math.sin(t*2.6+s.seed)*(1-A); sy*=1+.02*b; sx*=1-.012*b; }

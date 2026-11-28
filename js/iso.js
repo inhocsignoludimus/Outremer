@@ -161,9 +161,10 @@ function isoSize(){ const Wc=Math.round((parseFloat(canvas.style.width)||innerWi
 const W2S=(wx,wy)=>[isoOX+(wx-wy)/T*TW/2, isoOY+(wx+wy)/T*TH/2];
 window.isoWorldToScreen=W2S;
 const SCL=2; // escala dos sprites 2D dos personagens
-// pose pela direção NA TELA (os sprites têm 4 poses: frente, costas, esquerda, direita)
+// pose pela direção NA TELA (os sprites têm 4 poses: frente, costas, esquerda, direita).
+// wv já aplica a proporção 2:1 do iso ((dx+dy)*.5); ay não pode ser |sy|*2 — isso punha as diagonais dos eixos do mundo (uns 27° na tela) em empate e a histerese mantinha a pose antiga (cavalo andando de costas / moonwalk).
 const faceMem=new WeakMap();
-function pickFace(sx,sy,prev){ const ax=Math.abs(sx), ay=Math.abs(sy)*2; if(ax>ay*1.12) return sx>0?'right':'left'; if(ay>ax*1.12) return sy>0?'down':'up'; return prev||(sy>0?'down':'up'); }
+function pickFace(sx,sy,prev){ const ax=Math.abs(sx), ay=Math.abs(sy); if(ax>ay*1.12) return sx>0?'right':'left'; if(ay>ax*1.12) return sy>0?'down':'up'; return prev||(ax>=ay?(sx>0?'right':'left'):(sy>0?'down':'up')); }
 const wv=(dx,dy)=>[dx-dy,(dx+dy)*.5];
 function screenFace(e,k){ let st=faceMem.get(e); if(!st){ st={x:e.x,y:e.y,f:null,t:0}; faceMem.set(e,st); }
   const dx=e.x-st.x, dy=e.y-st.y; st.x=e.x; st.y=e.y;
