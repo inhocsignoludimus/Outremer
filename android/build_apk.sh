@@ -14,6 +14,10 @@ KS=${KS:-/workspace/outremer-2.4/apk-tools/debug.keystore}
 OUT=${OUT:-/workspace/outremer-2.4/outremer-ludimus-dawn.apk}
 rm -rf build && mkdir -p build/assets/www
 cp -r ../index.html ../manifest.json ../js ../js_en ../assets build/assets/www/
+# PNGs already in js/wv_pix.js as data: URIs — drop the duplicates from the APK
+# only (the repo keeps the files for desktop/http). CSS url() art is not in that
+# set and stays in assets/.
+python3 ../tools/pack_wv_pix.py --strip-www build/assets/www
 aapt2 compile --dir res -o build/res.zip
 aapt2 link -o build/base.apk -I "$SDKJAR" --manifest AndroidManifest.xml -A build/assets build/res.zip --min-sdk-version 21 --target-sdk-version 34
 java -jar "$SMALIJAR" assemble -a 21 -o build/classes.dex smali

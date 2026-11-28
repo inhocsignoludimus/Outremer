@@ -44,7 +44,27 @@ def write_meta(src: Path, global_name: str) -> None:
     )
     print("meta", out.relative_to(ROOT), "bytes", out.stat().st_size)
 
+def strip_www(www: Path) -> None:
+    """Remove from a packed www/ tree the PNGs already inlined in js/wv_pix.js.
+    CSS url() assets (lote4/ui etc.) are not in PIX_GLOBS and are kept."""
+    n = 0
+    bytes_ = 0
+    for pattern in PIX_GLOBS:
+        for f in (www / "assets").glob(pattern):
+            bytes_ += f.stat().st_size
+            f.unlink()
+            n += 1
+    print("stripped", n, "pngs", bytes_ // 1024, "KB from", www)
+
 def main() -> int:
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--strip-www", type=Path, default=None,
+                    help="delete inlined PNGs from this www/ directory only")
+    args = ap.parse_args()
+    if args.strip_www:
+        strip_www(args.strip_www)
+        return 0
     for src, name in META:
         if not src.exists():
             print("MISSING", src, file=sys.stderr)
