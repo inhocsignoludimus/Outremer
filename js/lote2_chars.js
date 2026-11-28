@@ -65,7 +65,7 @@ const hexRGB=h=>{ if(!h||h[0]!=='#') return [128,128,128]; if(h.length===4) h='#
 const mul=(c,k)=>[Math.min(255,c[0]*k|0),Math.min(255,c[1]*k|0),Math.min(255,c[2]*k|0)];
 const mix=(a,b,t)=>[a[0]+(b[0]-a[0])*t|0,a[1]+(b[1]-a[1])*t|0,a[2]+(b[2]-a[2])*t|0];
 const lift=(c,k)=>[c[0]+(255-c[0])*k|0,c[1]+(255-c[1])*k|0,c[2]+(255-c[2])*k|0];
-function imgData(im){ const c=document.createElement('canvas'); c.width=im.width; c.height=im.height; const g=c.getContext('2d',{willReadFrequently:true}); g.drawImage(im,0,0); return g.getImageData(0,0,c.width,c.height); }
+function imgData(im){ const c=document.createElement('canvas'); c.width=im.width; c.height=im.height; const g=c.getContext('2d',{willReadFrequently:true}); g.drawImage(im,0,0); try{ return g.getImageData(0,0,c.width,c.height); }catch(e){ throw e; } }
 // ---- qual corpo-base, e as cores ----
 const WK2=k=>{ try{ return k&&WEAR[k]||null; }catch(e){ return null; } };
 function gearOf(h){

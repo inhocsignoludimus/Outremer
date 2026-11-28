@@ -1,11 +1,13 @@
 #!/bin/sh
 # Gera o APK "Outremer Dawn" (pacote separado do Ludimus).
-# WebView serve www por https://appassets.androidplatform.net/assets/ via shouldInterceptRequest
-# (sem isso, file:///android_asset deixa fetch/getImageData falharem e o jogo cai no pixel antigo).
+# WebView carrega file:///android_asset/www/index.html. Os assets pintados
+# funcionam com origin null porque meta.json vai em .js e as texturas lidas
+# por getImageData vão em js/wv_pix.js (data: URI). ver tools/pack_wv_pix.py.
 # uso: sh android/build_apk.sh
 # requer: aapt2, zipalign, apksigner, java, android.jar (API 23+), smali.jar
 set -e
 cd "$(dirname "$0")"
+python3 ../tools/pack_wv_pix.py
 SDKJAR=${SDKJAR:-/workspace/outremer-2.4/apk-tools/android-6.0/android.jar}
 SMALIJAR=${SMALIJAR:-/workspace/outremer-2.4/apk-tools/smali.jar}
 KS=${KS:-/workspace/outremer-2.4/apk-tools/debug.keystore}

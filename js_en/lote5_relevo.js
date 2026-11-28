@@ -29,7 +29,7 @@ const ON2=()=>window.WORLD_ID===2;
 // ---------------- cor (mesma graduação do iso.js) ----------------
 function grade(r,g,b){ const l=r*.3+g*.59+b*.11; r=l+(r-l)*.82; g=l+(g-l)*.82; b=l+(b-l)*.82; return [(r-128)*1.06+133,(g-128)*1.06+129,(b-128)*1.06+122]; }
 function gradeCopy(im){ const c=document.createElement('canvas'); c.width=im.width; c.height=im.height; const g=c.getContext('2d'); g.drawImage(im,0,0);
-  const d0=g.getImageData(0,0,c.width,c.height), d=d0.data; for(let k=0;k<d.length;k+=4){ if(!d[k+3]) continue; const q=grade(d[k],d[k+1],d[k+2]); d[k]=q[0]; d[k+1]=q[1]; d[k+2]=q[2]; } g.putImageData(d0,0,0); return c; }
+  try{ const d0=g.getImageData(0,0,c.width,c.height), d=d0.data; for(let k=0;k<d.length;k+=4){ if(!d[k+3]) continue; const q=grade(d[k],d[k+1],d[k+2]); d[k]=q[0]; d[k+1]=q[1]; d[k+2]=q[2]; } g.putImageData(d0,0,0); }catch(e){} return c; }
 
 // =====================================================================
 // 1) MAPA DE ALTURA

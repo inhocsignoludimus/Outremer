@@ -126,7 +126,7 @@ function drawHero(){
   try{ if(io!==undefined) invOpen=false; player.face='down'; player.aimAng=Math.PI/2; player.atkT=0; player.hurtT=0; g.save(); g.scale(6,6); drawPlayer(g,14.7,33.5); g.restore(); }
   finally{ if(io!==undefined) invOpen=io; player.face=sv.face; player.aimAng=sv.aim; player.atkT=sv.atk; player.hurtT=sv.hurt; }
   // só troca o boneco antigo se o herói novo saiu desenhado de verdade
-  const d=g.getImageData(0,0,176,208).data; let n=0; for(let i=3;i<d.length;i+=16) if(d[i]) n++;
+  let n=0; try{ const d=g.getImageData(0,0,176,208).data; for(let i=3;i<d.length;i+=16) if(d[i]) n++; }catch(e){ n=200; }
   if(n<120){ hc.style.display='none'; pc.style.display=''; return; }
   const h=hc.getContext('2d'); h.imageSmoothingEnabled=false; h.clearRect(0,0,176,208); h.drawImage(off,0,0);
   hc.style.display=''; pc.style.display='none';

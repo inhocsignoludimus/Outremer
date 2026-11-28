@@ -9,18 +9,18 @@ const WALLS=['castelo','torre','enxaimel','tabuas','arenito','reboco','pedra','t
 const JAN=['janela_pedra','janela_madeira','seteira','porta_arco','porta_tabuas','porta_arenito'];
 const L=window.LOTE3={tex:{},wall:{},jan:{},img:{},gimg:{},meta:{},ready:false,errors:[]};
 const loadImg=src=>new Promise((res,rej)=>{ const im=new Image(); im.onload=()=>res(im); im.onerror=()=>{ L.errors.push(src); rej(src); }; im.src=src; });
-const pix=im=>{ const c=document.createElement('canvas'); c.width=im.width; c.height=im.height; const g=c.getContext('2d',{willReadFrequently:true}); g.drawImage(im,0,0); return {w:im.width,h:im.height,d:g.getImageData(0,0,im.width,im.height).data}; };
+const pix=im=>{ const c=document.createElement('canvas'); c.width=im.width; c.height=im.height; const g=c.getContext('2d',{willReadFrequently:true}); g.drawImage(im,0,0); try{ return {w:im.width,h:im.height,d:g.getImageData(0,0,im.width,im.height).data}; }catch(e){ throw e; } };
 const hsh=ISOC.hsh;
 // mesmo tratamento de cor do iso.js (para o que é desenhado direto, sem passar pelo gradeCanvas)
 function grade(r,g,b){ const l=r*.3+g*.59+b*.11; r=l+(r-l)*.82; g=l+(g-l)*.82; b=l+(b-l)*.82; return [(r-128)*1.06+133,(g-128)*1.06+129,(b-128)*1.06+122]; }
-function gradeCopy(cv){ const c=document.createElement('canvas'); c.width=cv.width; c.height=cv.height; const g=c.getContext('2d'); g.drawImage(cv,0,0); const im=g.getImageData(0,0,c.width,c.height), d=im.data;
-  for(let k=0;k<d.length;k+=4){ if(!d[k+3]) continue; const q=grade(d[k],d[k+1],d[k+2]); d[k]=q[0]; d[k+1]=q[1]; d[k+2]=q[2]; } g.putImageData(im,0,0); return c; }
+function gradeCopy(cv){ const c=document.createElement('canvas'); c.width=cv.width; c.height=cv.height; const g=c.getContext('2d'); g.drawImage(cv,0,0); try{ const im=g.getImageData(0,0,c.width,c.height), d=im.data;
+  for(let k=0;k<d.length;k+=4){ if(!d[k+3]) continue; const q=grade(d[k],d[k+1],d[k+2]); d[k]=q[0]; d[k+1]=q[1]; d[k+2]=q[2]; } g.putImageData(im,0,0); }catch(e){} return c; }
 function flipCv(cv){ const c=document.createElement('canvas'); c.width=cv.width; c.height=cv.height; const g=c.getContext('2d'); g.translate(c.width,0); g.scale(-1,1); g.drawImage(cv,0,0); return c; }
 function toCv(im){ const c=document.createElement('canvas'); c.width=im.width; c.height=im.height; c.getContext('2d').drawImage(im,0,0); return c; }
 // toldo da feira nas 4 cores do jogo (world2.js): troca o vermelho do pano mantendo a luz
-function tintAwning(cv,to){ const c=toCv(cv), g=c.getContext('2d'), im=g.getImageData(0,0,c.width,c.height), d=im.data;
+function tintAwning(cv,to){ const c=toCv(cv), g=c.getContext('2d'); try{ const im=g.getImageData(0,0,c.width,c.height), d=im.data;
   for(let k=0;k<d.length;k+=4){ const r=d[k],gg=d[k+1],b=d[k+2]; if(d[k+3]&&r>80&&r>gg*1.5&&r>b*1.4){ const l=(r*.5+gg*.3+b*.2)/110; d[k]=Math.min(255,to[0]*l); d[k+1]=Math.min(255,to[1]*l); d[k+2]=Math.min(255,to[2]*l); } }
-  g.putImageData(im,0,0); return c; }
+  g.putImageData(im,0,0); }catch(e){} return c; }
 
 // ---------------- pisos ----------------
 const D=(k,m)=>[k,m||1];

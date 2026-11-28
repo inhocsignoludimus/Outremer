@@ -14,8 +14,8 @@ window.setCam=function(m){ camMode=m; try{ localStorage.setItem('outremer_cam',m
 // ---------- cor final (menos saturação, contraste leve, tom quente) ----------
 function grade(r,g,b){ const l=r*.3+g*.59+b*.11; r=l+(r-l)*.82; g=l+(g-l)*.82; b=l+(b-l)*.82;
   return [(r-128)*1.06+133, (g-128)*1.06+129, (b-128)*1.06+122]; }
-function gradeCanvas(cv){ const g=cv.getContext('2d'), im=g.getImageData(0,0,cv.width,cv.height), d=im.data;
-  for(let k=0;k<d.length;k+=4){ if(!d[k+3]) continue; const c=grade(d[k],d[k+1],d[k+2]); d[k]=c[0]; d[k+1]=c[1]; d[k+2]=c[2]; } g.putImageData(im,0,0); }
+function gradeCanvas(cv){ try{ const g=cv.getContext('2d'), im=g.getImageData(0,0,cv.width,cv.height), d=im.data;
+  for(let k=0;k<d.length;k+=4){ if(!d[k+3]) continue; const c=grade(d[k],d[k+1],d[k+2]); d[k]=c[0]; d[k+1]=c[1]; d[k+2]=c[2]; } g.putImageData(im,0,0); }catch(e){} }
 const biomeAt=(x,y)=>{ const r=(typeof regions!=='undefined'&&regionId)?regions[regionId[y*W+x]]:null;
   if(typeof DG!=='undefined'&&DG&&inDGT(x,y)) return 'dg'; if(r&&(r.kind==='city'||r.kind==='town')) return 'city'; return (r&&r.biome)||'p'; };
 // ---------- pedaços de chão (16x16 ladrilhos), com sombras fixas já pintadas ----------

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#0c0a09"><link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" href="assets/icon-192.png"><link rel="icon" type="image/png" href="assets/favicon.png">
+<meta name="theme-color" content="#0c0a09"><link rel="apple-touch-icon" href="assets/icon-192.png"><link rel="icon" type="image/png" href="assets/favicon.png">
 <title>Outremer — pixel</title>
 <style>@font-face{font-family:'Pixelify Sans';font-style:normal;font-weight:400;font-display:swap;src:url(assets/fonts/pixelify-sans-latin-400-normal.woff2) format('woff2')}@font-face{font-family:'Pixelify Sans';font-style:normal;font-weight:600;font-display:swap;src:url(assets/fonts/pixelify-sans-latin-600-normal.woff2) format('woff2')}@font-face{font-family:'Cinzel';font-style:normal;font-weight:500;font-display:swap;src:url(assets/fonts/cinzel-latin-500-normal.woff2) format('woff2')}@font-face{font-family:'Cinzel';font-style:normal;font-weight:700;font-display:swap;src:url(assets/fonts/cinzel-latin-700-normal.woff2) format('woff2')}@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:400;font-display:swap;src:url(assets/fonts/cormorant-garamond-latin-400-italic.woff2) format('woff2')}
 body.apk #btn-fs, body.apk #t-fs{display:none!important}</style>
@@ -486,7 +486,10 @@ body.apk #btn-fs, body.apk #t-fs{display:none!important}</style>
   <div id="export-box" style="display:none"><textarea id="export-text" readonly></textarea><button class="mbtn" id="export-copy">Copiar texto do save</button></div>
 </div></div>
 
+<script>(function(){try{if(location.protocol!=='file:'){var l=document.createElement('link');l.rel='manifest';l.href='manifest.json';document.head.appendChild(l);}}catch(e){}})();</script>
 <script>(function(){var L;try{L=localStorage.getItem('outremer_lang')}catch(e){}if(L!=='pt'&&L!=='en'){var n='';try{n=(navigator.languages&&navigator.languages[0])||navigator.language||''}catch(e){}L=/^pt(\b|-|_)/i.test(n)?'pt':'en';try{localStorage.setItem('outremer_lang',L)}catch(e){}}window.LANG=L;
+var pre=['js/wv_origin.js','js/wv_pix.js','assets/lote1/meta.js','assets/lote2/meta.js','assets/lote2/meta_monstros.js','assets/lote2/camadas/meta_camadas.js','assets/lote3/meta.js','assets/lote5/landmarks/meta.js'];
+for(var i=0;i<pre.length;i++) document.write('<script src="'+pre[i]+'"><\/script>');
 var d=L==='en'?'js_en/':'js/',F=["world.js", "vehicles.js", "decor.js", "survival.js", "npc.js", "game.js", "outremer.js", "arms.js", "data3d.js", "items.js", "intro.js", "chars.js", "gear_draw.js", "paperdoll.js", "monsters.js", "magic.js", "sim.js", "hud.js", "world2.js", "fishing.js", "craft.js", "housing.js", "mounts.js", "events.js", "loyalty.js", "sound.js", "ui.js", "uo_ui.js", "lote1.js", "iso_core.js", "iso.js", "scenery.js", "aeloria2_mask.js", "aeloria2.js", "landmarks.js", "dungeons.js", "ports.js", "three.min.js", "props3d.js", "fp.js", "fp_manifest.js", "fpsprites.js", "weather.js", "hudwin.js", "lote2_chars.js", "lote3_cidade.js", "lote4_hud.js", "lote5_relevo.js", "lote5_ui.js", "lote6_dawn.js", "lang.js"];if(L==='en')F.unshift('_html.js');
 for(var i=0;i<F.length;i++){var f=F[i];document.write('<script src="'+(f==='lang.js'?'js/':d)+f+'"><\/script>');}})();</script>
 </body>

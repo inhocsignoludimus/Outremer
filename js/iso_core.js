@@ -80,7 +80,7 @@ function drawWall(img,W8,H8,sx,sy,M,Hh,win,showL,showR,low){
 function drawTree(g,X,Y,seed,biome){
   const conifer=biome==='n'||biome==='m'||hsh(seed,1,1)<.3, au=hsh(seed,2,2), snow=biome==='n';
   const BW=150, BH=190, ox=75, oy=184;
-  const img=g.getImageData(X-ox,Y-oy,BW,BH), d=img.data, put=(x,y,c)=>{ x|=0; y|=0; if(x<0||y<0||x>=BW||y>=BH) return; const k=(y*BW+x)*4; d[k]=c[0]; d[k+1]=c[1]; d[k+2]=c[2]; d[k+3]=255; };
+  let img; try{ img=g.getImageData(X-ox,Y-oy,BW,BH); }catch(e){ return; } const d=img.data, put=(x,y,c)=>{ x|=0; y|=0; if(x<0||y<0||x>=BW||y>=BH) return; const k=(y*BW+x)*4; d[k]=c[0]; d[k+1]=c[1]; d[k+2]=c[2]; d[k+3]=255; };
   const L=[-.6,-.55,.58];
   // tronco com casca
   const th=conifer?30:44, tw=conifer?4:6;
@@ -189,7 +189,7 @@ window.isoRender=function(cxT,cyT,opts={}){
       const low = opts.cut!==false && (INTERIOR.has(back1)||INTERIOR.has(back2)) && !INTERIOR.has(nl)&&!INTERIOR.has(nr);
       const Hh=low?8:WH, win=t0===TL.WINDOW&&!low;
       const cU1=isPanel(map[i+1]), cU0=isPanel(map[i-1]), cV1=isPanel(map[i+W]), cV0=isPanel(map[i-W]);
-      const im=g.getImageData(0,0,Wc,Hc), X=it.x+.5, Y=it.y+.5;
+      let im; try{ im=g.getImageData(0,0,Wc,Hc); }catch(e){ continue; } const X=it.x+.5, Y=it.y+.5;
       // ordem: metade de trás primeiro (-U,-V), depois a da frente (+U,+V)
       if(cV0) drawPanel(im,Wc,Hc,toS,X,Y-.5,false,.5,Hh,M,win,low);
       if(cU0) drawPanel(im,Wc,Hc,toS,X-.5,Y,true,.5,Hh,M,win,low);
@@ -219,13 +219,13 @@ window.isoRender=function(cxT,cyT,opts={}){
     for(const [U,V,r] of (opts.lights||[])){ const [x,y]=toS(U,V); const gr=g.createRadialGradient(x,y-20,0,x,y-20,r*.6); gr.addColorStop(0,'rgba(255,140,50,.22)'); gr.addColorStop(1,'rgba(255,140,50,0)'); g.fillStyle=gr; g.fillRect(x-r,y-20-r,2*r,2*r); }
     g.globalCompositeOperation='source-over'; }
   // tratamento de cor: menos saturação, contraste suave, tom quente e vinheta
-  if(opts.grade!==false){ const im=g.getImageData(0,0,Wc,Hc), q=im.data;
+  if(opts.grade!==false){ try{ const im=g.getImageData(0,0,Wc,Hc), q=im.data;
     for(let y=0;y<Hc;y++) for(let x=0;x<Wc;x++){ const k=(y*Wc+x)*4; let r=q[k],gg=q[k+1],b=q[k+2]; const l=r*.3+gg*.59+b*.11;
       r=l+(r-l)*.8; gg=l+(gg-l)*.8; b=l+(b-l)*.8;
       r=(r-128)*1.06+128+5; gg=(gg-128)*1.06+128+1; b=(b-128)*1.06+128-6;
       const vx=(x/Wc-.5), vy=(y/Hc-.5), v=1-Math.min(.32,(vx*vx+vy*vy)*.9);
       q[k]=r*v; q[k+1]=gg*v; q[k+2]=b*v; }
-    g.putImageData(im,0,0); }
+    g.putImageData(im,0,0); }catch(e){} }
   return cv;
 };
 })();
@@ -263,7 +263,7 @@ function flame(x,y,s=1){ const gr=G.createRadialGradient(x,y,0,x,y,22*s); gr.add
 // ---------- massa orgânica (rocha, arbusto, sebe, feno): elipsoide com ruído, pixel a pixel ----------
 function blob(U,V,r,h,pal,seed,o={}){ const [cx,cy]=P(U,V,o.z||0), rx=Math.ceil(r*TW*.72), ry=r*TH*.72;
   const x0=cx-rx-2, y0=Math.floor(cy-h-ry-4), w=rx*2+4, hh=Math.ceil(h+ry*2+8);
-  const img=G.getImageData(x0,y0,w,hh), d=img.data, zb=new Float32Array(w*hh).fill(-1e9);
+  let img; try{ img=G.getImageData(x0,y0,w,hh); }catch(e){ return; } const d=img.data, zb=new Float32Array(w*hh).fill(-1e9);
   const L=[-.55,-.45,.7], fr=o.freq||3, rough=o.rough==null?.45:o.rough;
   for(let px=0;px<w;px++){ const a=(px+x0-cx)/rx; if(Math.abs(a)>=1) continue; const s=Math.sqrt(1-a*a);
     const steps=Math.ceil(ry*2+h*1.2);
